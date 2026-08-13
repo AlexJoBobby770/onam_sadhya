@@ -4,13 +4,7 @@ from app.config import settings
 
 # Engine configuration depending on DB type
 is_sqlite = settings.DATABASE_URL.startswith("sqlite")
-
-connect_args = {}
-if is_sqlite:
-    connect_args = {"check_same_thread": False}
-elif "localhost" not in settings.DATABASE_URL and "127.0.0.1" not in settings.DATABASE_URL:
-    # Remote PostgreSQL database (e.g. Supabase, Render, Neon)
-    connect_args = {"ssl": "require"}
+connect_args = {"check_same_thread": False} if is_sqlite else {}
 
 engine = create_async_engine(
     settings.DATABASE_URL,
