@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased bg-slate-950 text-slate-100 font-sans;
+  }
+}
+
+/* Clean Professional UI Components */
+.glass-panel {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+}
+
+.glass-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #020617;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
