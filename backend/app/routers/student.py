@@ -1,11 +1,13 @@
 import os
 import uuid
 from typing import Optional
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.config import settings
 from app.database import get_db
 from app.models import User, Ticket, TicketStatus
 from app.schemas import UserResponse, TicketResponse
@@ -16,10 +18,11 @@ router = APIRouter(prefix="", tags=["Student"])
 
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads", "proofs")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+MAX_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024  # 5MB cap
 
-def build_ticket_response(ticket: Ticket) -> TicketResponse:
+def build_ticket_response(ticket: Ticket, with_qr: bool = False) -> TicketResponse:
     qr_b64 = None
-    if ticket.status == TicketStatus.APPROVED and ticket.qr_token:
+    if with_qr and ticket.status == TicketStatus.APPROVED and ticket.qr_token:
         qr_b64 = generate_qr_code_base64(ticket.qr_token)
 
     return TicketResponse(
@@ -32,7 +35,7 @@ def build_ticket_response(ticket: Ticket) -> TicketResponse:
         payment_proof_url=ticket.payment_proof_url,
         payment_note=ticket.payment_note,
         rejection_reason=ticket.rejection_reason,
-        qr_token=ticket.qr_token if ticket.status == TicketStatus.APPROVED else None,
+        qr_token=ticket.qr_token if (with_qr and ticket.status == TicketStatus.APPROVED) else None,
         qr_code_base64=qr_b64,
         used=ticket.used,
         scanned_at=ticket.scanned_at,
@@ -64,7 +67,7 @@ async def get_my_ticket(
     ticket = result.scalars().first()
     if not ticket:
         return None
-    return build_ticket_response(ticket)
+    return build_ticket_response(ticket, with_qr=True)
 
 @router.post("/tickets", response_model=TicketResponse)
 async def submit_ticket(
@@ -87,14 +90,56 @@ async def submit_ticket(
 
     file_url = None
     if proof_file and proof_file.filename:
+        # 1. Reject non-image content types
+        content_type = proof_file.content_type or ""
+        if not content_type.startswith("image/"):
+            raise HTTPException(status_code=400, detail="Only image files (JPG, PNG, WebP) are allowed.")
+
+        # 2. Stream to check 5MB cap
+        chunks = []
+        bytes_read = 0
+        chunk_size = 64 * 1024
+        while True:
+            chunk = await proof_file.read(chunk_size)
+            if not chunk:
+                break
+            bytes_read += len(chunk)
+            if bytes_read > MAX_UPLOAD_SIZE_BYTES:
+                raise HTTPException(status_code=400, detail="File size exceeds maximum allowed 5MB limit.")
+            chunks.append(chunk)
+
+        file_bytes = b"".join(chunks)
         ext = os.path.splitext(proof_file.filename)[1] or ".png"
         filename = f"proof_{current_user.id}_{uuid.uuid4().hex[:8]}{ext}"
-        filepath = os.path.join(UPLOAD_DIR, filename)
-        
-        contents = await proof_file.read()
-        with open(filepath, "wb") as f:
-            f.write(contents)
-        file_url = f"/uploads/proofs/{filename}"
+
+        # 3. Stream upload to Supabase Storage if configured, else local storage
+        if settings.SUPABASE_URL and settings.SUPABASE_KEY:
+            try:
+                async with httpx.AsyncClient() as client:
+                    supabase_endpoint = f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1/object/{settings.SUPABASE_BUCKET}/{filename}"
+                    headers = {
+                        "Authorization": f"Bearer {settings.SUPABASE_KEY}",
+                        "Content-Type": content_type,
+                        "x-upsert": "true"
+                    }
+                    res = await client.post(supabase_endpoint, headers=headers, content=file_bytes)
+                    if res.status_code in (200, 201):
+                        file_url = f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1/object/public/{settings.SUPABASE_BUCKET}/{filename}"
+                    else:
+                        filepath = os.path.join(UPLOAD_DIR, filename)
+                        with open(filepath, "wb") as f:
+                            f.write(file_bytes)
+                        file_url = f"/uploads/proofs/{filename}"
+            except Exception:
+                filepath = os.path.join(UPLOAD_DIR, filename)
+                with open(filepath, "wb") as f:
+                    f.write(file_bytes)
+                file_url = f"/uploads/proofs/{filename}"
+        else:
+            filepath = os.path.join(UPLOAD_DIR, filename)
+            with open(filepath, "wb") as f:
+                f.write(file_bytes)
+            file_url = f"/uploads/proofs/{filename}"
 
     ticket = Ticket(
         user_id=current_user.id,
@@ -113,4 +158,5 @@ async def submit_ticket(
     )
     ticket = (await db.execute(stmt)).scalar_one()
 
-    return build_ticket_response(ticket)
+    return build_ticket_response(ticket, with_qr=False)
+

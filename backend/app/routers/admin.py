@@ -1,10 +1,11 @@
 import csv
 import io
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select, update, func
+from sqlalchemy import select, update, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -12,8 +13,8 @@ from app.config import settings
 from app.database import get_db
 from app.models import User, Ticket, TicketStatus, UserRole
 from app.schemas import (
-    TicketResponse, TicketApproveRequest, TicketRejectRequest,
-    ScanRequest, ScanResponse, UserResponse, UserRoleUpdate, AnalyticsResponse
+    TicketResponse, TicketApproveRequest, TicketRejectRequest, BulkApproveRequest,
+    ScanRequest, ScanResponse, ManualScanRequest, UserResponse, UserRoleUpdate, AnalyticsResponse
 )
 from app.utils.security import require_roles
 from app.utils.qr import generate_qr_token, verify_and_extract_ticket_id, generate_qr_code_base64
@@ -30,24 +31,93 @@ require_super_admin_only = require_roles([UserRole.SUPER_ADMIN])
 @router.get("/tickets", response_model=List[TicketResponse])
 async def list_tickets(
     status_filter: Optional[str] = Query(None, alias="status"),
+    search: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(require_admin_or_super)
 ):
     stmt = (
         select(Ticket)
+        .join(Ticket.user)
         .options(
             selectinload(Ticket.user),
             selectinload(Ticket.scanner)
         )
         .order_by(Ticket.created_at.desc())
     )
-    if status_filter:
+    if status_filter and status_filter.lower() != 'all':
         status_enum = status_filter.lower()
         stmt = stmt.where(Ticket.status == status_enum)
 
+    if search and search.strip():
+        s = f"%{search.strip().lower()}%"
+        stmt = stmt.where(
+            or_(
+                func.lower(User.name).like(s),
+                func.lower(User.phone).like(s),
+                func.lower(User.roll_no).like(s)
+            )
+        )
+
+    offset = (page - 1) * limit
+    stmt = stmt.offset(offset).limit(limit)
+
     result = await db.execute(stmt)
     tickets = result.scalars().all()
-    return [build_ticket_response(t) for t in tickets]
+    return [build_ticket_response(t, with_qr=False) for t in tickets]
+
+@router.post("/tickets/bulk-approve", response_model=List[TicketResponse])
+async def bulk_approve_tickets(
+    payload: BulkApproveRequest,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin_or_super)
+):
+    if not payload.ticket_ids:
+        return []
+
+    stmt = (
+        select(Ticket)
+        .options(selectinload(Ticket.user), selectinload(Ticket.scanner))
+        .where(Ticket.id.in_(payload.ticket_ids))
+    )
+    tickets = (await db.execute(stmt)).scalars().all()
+
+    approved_list = []
+    for ticket in tickets:
+        if ticket.status == TicketStatus.PENDING:
+            ticket.status = TicketStatus.APPROVED
+            ticket.qr_token = generate_qr_token(ticket.id)
+            ticket.reviewed_by = admin.id
+            if payload.note:
+                ticket.payment_note = payload.note
+            approved_list.append(ticket)
+
+    await db.commit()
+    for t in approved_list:
+        await db.refresh(t)
+
+    return [build_ticket_response(t, with_qr=False) for t in approved_list]
+
+@router.get("/approved-tickets")
+async def list_approved_tickets(
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin_or_super)
+):
+    stmt = (
+        select(Ticket)
+        .options(selectinload(Ticket.user))
+        .where(Ticket.status == TicketStatus.APPROVED)
+    )
+    tickets = (await db.execute(stmt)).scalars().all()
+    return [{
+        "ticket_id": t.id,
+        "user_name": t.user.name if t.user else "",
+        "user_phone": t.user.phone if t.user else "",
+        "user_roll_no": t.user.roll_no if t.user else "",
+        "qr_token": t.qr_token,
+        "used": t.used
+    } for t in tickets]
 
 @router.post("/tickets/{ticket_id}/approve", response_model=TicketResponse)
 async def approve_ticket(
@@ -76,7 +146,7 @@ async def approve_ticket(
 
     await db.commit()
     await db.refresh(ticket)
-    return build_ticket_response(ticket)
+    return build_ticket_response(ticket, with_qr=False)
 
 @router.post("/tickets/{ticket_id}/reject", response_model=TicketResponse)
 async def reject_ticket(
@@ -101,7 +171,7 @@ async def reject_ticket(
 
     await db.commit()
     await db.refresh(ticket)
-    return build_ticket_response(ticket)
+    return build_ticket_response(ticket, with_qr=False)
 
 @router.post("/scan", response_model=ScanResponse)
 async def scan_qr_code(
@@ -183,9 +253,12 @@ async def scan_qr_code(
 
         if ticket.used:
             scanned_by_str = ticket.scanner.name if ticket.scanner else "Gatekeeper"
+            # Timezone Fix: Convert to Asia/Kolkata IST
+            ist_scanned_at = ticket.scanned_at.astimezone(ZoneInfo("Asia/Kolkata")) if ticket.scanned_at else now
+            formatted_time = ist_scanned_at.strftime('%I:%M %p')
             return ScanResponse(
                 success=False,
-                message=f"ALREADY SCANNED — Ticket was scanned previously on {ticket.scanned_at.strftime('%I:%M %p')} by {scanned_by_str}.",
+                message=f"ALREADY SCANNED — Ticket was scanned previously on {formatted_time} IST by {scanned_by_str}.",
                 status="ALREADY_USED",
                 student_name=ticket.user.name,
                 roll_no=ticket.user.roll_no,
@@ -199,6 +272,92 @@ async def scan_qr_code(
             message="Scan validation failed.",
             status="INVALID_TOKEN"
         )
+
+@router.post("/scan-manual", response_model=ScanResponse)
+async def scan_manual(
+    payload: ManualScanRequest,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin_or_super)
+):
+    """
+    Manual Entry Endpoint for students with dead phones.
+    Reuses the exact same atomic update logic to prevent race conditions.
+    """
+    ticket_id = payload.ticket_id.strip()
+    now = datetime.now(timezone.utc)
+
+    # Reuses atomic update logic
+    atomic_stmt = (
+        update(Ticket)
+        .where(
+            Ticket.id == ticket_id,
+            Ticket.used == False,
+            Ticket.status == TicketStatus.APPROVED
+        )
+        .values(
+            used=True,
+            scanned_at=now,
+            scanned_by=admin.id
+        )
+    )
+    result = await db.execute(atomic_stmt)
+    await db.commit()
+
+    ticket_stmt = (
+        select(Ticket)
+        .options(selectinload(Ticket.user), selectinload(Ticket.scanner))
+        .where(Ticket.id == ticket_id)
+    )
+    ticket = (await db.execute(ticket_stmt)).scalar_one_or_none()
+
+    if not ticket:
+        return ScanResponse(
+            success=False,
+            message="INVALID TICKET — Record does not exist.",
+            status="INVALID_TOKEN"
+        )
+
+    if result.rowcount > 0:
+        return ScanResponse(
+            success=True,
+            message=f"ENTRY GRANTED (MANUAL) — Welcome to Onam Sadhya, {ticket.user.name}!",
+            status="GRANTED",
+            student_name=ticket.user.name,
+            roll_no=ticket.user.roll_no,
+            phone=ticket.user.phone,
+            scanned_at=ticket.scanned_at,
+            scanned_by_name=admin.name
+        )
+    else:
+        if ticket.status != TicketStatus.APPROVED:
+            return ScanResponse(
+                success=False,
+                message=f"REJECTED — Ticket status is '{ticket.status.value.upper()}'.",
+                status="TICKET_NOT_APPROVED",
+                student_name=ticket.user.name
+            )
+
+        if ticket.used:
+            scanned_by_str = ticket.scanner.name if ticket.scanner else "Gatekeeper"
+            ist_scanned_at = ticket.scanned_at.astimezone(ZoneInfo("Asia/Kolkata")) if ticket.scanned_at else now
+            formatted_time = ist_scanned_at.strftime('%I:%M %p')
+            return ScanResponse(
+                success=False,
+                message=f"ALREADY SCANNED — Ticket was scanned previously on {formatted_time} IST by {scanned_by_str}.",
+                status="ALREADY_USED",
+                student_name=ticket.user.name,
+                roll_no=ticket.user.roll_no,
+                phone=ticket.user.phone,
+                previously_scanned_at=ticket.scanned_at,
+                scanned_by_name=scanned_by_str
+            )
+
+        return ScanResponse(
+            success=False,
+            message="Manual scan validation failed.",
+            status="INVALID_TOKEN"
+        )
+
 
 
 # --- SUPER ADMIN ENDPOINTS ---

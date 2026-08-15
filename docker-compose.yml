@@ -23,7 +23,7 @@ services:
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgrespassword@db:5432/onam_sadhya_db
       - SECRET_KEY=onam_sadhya_super_secret_production_key_2026
-      - DEV_MODE=true
+      - DEV_MODE=false
     depends_on:
       - db
 

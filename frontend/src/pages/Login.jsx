@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/client';
-import { Phone, KeyRound, ArrowRight, AlertCircle, ShieldCheck, Ticket, UserCheck } from 'lucide-react';
+import { Mail, KeyRound, ArrowRight, AlertCircle, Ticket, User, Hash } from 'lucide-react';
 
 export const Login = () => {
-  const { loginWithToken, devLogin } = useAuth();
-  const [step, setStep] = useState('phone'); // 'phone' | 'otp'
+  const { loginWithToken } = useAuth();
+  const [step, setStep] = useState('email'); // 'email' | 'otp'
   const [name, setName] = useState('Rahul Nair');
-  const [phone, setPhone] = useState('9876543210');
+  const [email, setEmail] = useState('rahul.nair@gmail.com');
+  const [rollNo, setRollNo] = useState('CS2026');
   const [otp, setOtp] = useState('');
   const [devOtpHint, setDevOtpHint] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,21 +19,25 @@ export const Login = () => {
     setError('');
 
     if (!name.trim()) {
-      setError('Please enter your name');
+      setError('Please enter your full name');
       return;
     }
-    if (!phone || phone.length < 10) {
-      setError('Please enter a valid 10-digit mobile number');
+    if (!email.trim() || !email.includes('@')) {
+      setError('Please enter a valid email address');
+      return;
+    }
+    if (!rollNo.trim()) {
+      setError('Please enter your Roll Number');
       return;
     }
 
     setLoading(true);
     try {
-      const res = await api.post('/auth/send-otp', { phone: phone.trim() });
+      const res = await api.post('/auth/send-otp', { phone: email.trim().toLowerCase() });
       setDevOtpHint(res.data.dev_otp || '');
       setStep('otp');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to send OTP. Please check your phone number.');
+      setError(err.response?.data?.detail || 'Failed to send OTP. Please verify your email address.');
     } finally {
       setLoading(false);
     }
@@ -43,37 +48,23 @@ export const Login = () => {
     setError('');
 
     if (!otp || otp.length < 4) {
-      setError('Please enter the verification code sent to your phone');
+      setError('Please enter the verification code sent to your email');
       return;
     }
 
     setLoading(true);
     try {
       const res = await api.post('/auth/verify-otp', {
-        phone: phone.trim(),
+        phone: email.trim().toLowerCase(),
         otp: otp.trim(),
-        name: name.trim()
+        name: name.trim(),
+        roll_no: rollNo.trim()
       });
       loginWithToken(res.data.access_token, res.data.user);
     } catch (err) {
       setError(err.response?.data?.detail || 'Invalid or expired verification code.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleQuickRoleLogin = async (role) => {
-    setError('');
-    try {
-      if (role === 'student') {
-        await devLogin('9876543210', 'Rahul Nair', 'student');
-      } else if (role === 'admin') {
-        await devLogin('9998887771', 'Ananya V (Volunteer Admin)', 'admin');
-      } else if (role === 'super_admin') {
-        await devLogin('9998887770', 'Dr. Radhakrishnan (Super Admin)', 'super_admin');
-      }
-    } catch (err) {
-      setError('Dev login failed');
     }
   };
 
@@ -91,7 +82,7 @@ export const Login = () => {
           <h2 className="text-2xl font-bold text-white tracking-tight">
             Onam Sadhya Ticketing
           </h2>
-          <p className="text-xs text-slate-400 mt-1">College Fest Gate Entry Verification System</p>
+          <p className="text-xs text-slate-400 mt-1">Official Student Gate Entry Portal</p>
         </div>
 
         {error && (
@@ -101,44 +92,68 @@ export const Login = () => {
           </div>
         )}
 
-        {/* STEP 1: Phone & Name Input */}
-        {step === 'phone' && (
+        {/* STEP 1: Registration Form */}
+        {step === 'email' && (
           <form onSubmit={handleSendOTP} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">Full Name</label>
-              <input
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your name"
-                className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 transition"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Phone Number</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                  <Phone className="w-4 h-4" />
+                  <User className="w-4 h-4" />
                 </div>
                 <input
-                  type="tel"
+                  type="text"
                   required
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="9876543210"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 transition font-mono"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Rahul Nair"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 transition"
                 />
               </div>
             </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Roll Number</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                  <Hash className="w-4 h-4" />
+                </div>
+                <input
+                  type="text"
+                  required
+                  value={rollNo}
+                  onChange={(e) => setRollNo(e.target.value)}
+                  placeholder="CS2026"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 transition font-mono uppercase"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Email Address</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                  <Mail className="w-4 h-4" />
+                </div>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="student@gmail.com"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 transition font-mono"
+                />
+              </div>
+              <p className="text-[10px] text-slate-500 mt-1">Enter your email address to receive single-use verification OTP</p>
+            </div>
+
 
             <button
               type="submit"
               disabled={loading}
               className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
             >
-              <span>{loading ? 'Sending OTP...' : 'Send Verification OTP'}</span>
+              <span>{loading ? 'Sending Email OTP...' : 'Send Verification OTP'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
@@ -148,7 +163,7 @@ export const Login = () => {
         {step === 'otp' && (
           <form onSubmit={handleVerifyOTP} className="space-y-4">
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 text-center">
-              Verification OTP sent to <span className="font-mono text-emerald-400 font-bold">{phone}</span>
+              Verification OTP sent to <span className="font-mono text-emerald-400 font-bold">{email}</span>
               {devOtpHint && (
                 <div className="mt-1 font-mono text-xs text-slate-400">
                   OTP Code: <strong className="text-emerald-400">{devOtpHint}</strong>
@@ -184,46 +199,13 @@ export const Login = () => {
 
             <button
               type="button"
-              onClick={() => setStep('phone')}
+              onClick={() => setStep('email')}
               className="w-full text-xs text-slate-400 hover:text-slate-200 transition text-center pt-2"
             >
-              Change Phone Number
+              Change Email Address
             </button>
           </form>
         )}
-
-        {/* Quick Role Switcher for Development */}
-        <div className="mt-8 pt-6 border-t border-slate-800">
-          <p className="text-[11px] font-semibold text-slate-400 text-center mb-3">
-            Quick Dev Login Switcher
-          </p>
-
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              onClick={() => handleQuickRoleLogin('student')}
-              className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition"
-            >
-              <p className="text-xs font-bold text-white">Student</p>
-              <p className="text-[10px] text-slate-500">View Pass</p>
-            </button>
-
-            <button
-              onClick={() => handleQuickRoleLogin('admin')}
-              className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition"
-            >
-              <p className="text-xs font-bold text-white">Admin</p>
-              <p className="text-[10px] text-slate-500">Approvals</p>
-            </button>
-
-            <button
-              onClick={() => handleQuickRoleLogin('super_admin')}
-              className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition"
-            >
-              <p className="text-xs font-bold text-white">Super Admin</p>
-              <p className="text-[10px] text-slate-500">Analytics</p>
-            </button>
-          </div>
-        </div>
 
       </div>
     </div>

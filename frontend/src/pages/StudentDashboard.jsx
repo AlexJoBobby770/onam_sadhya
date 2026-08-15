@@ -28,6 +28,54 @@ export const StudentDashboard = () => {
     }
   };
 
+  const compressImage = (imageFile, maxDimension = 1280, quality = 0.8) => {
+    return new Promise((resolve) => {
+      if (!imageFile || !imageFile.type.startsWith('image/')) {
+        resolve(imageFile);
+        return;
+      }
+      const img = new Image();
+      img.src = URL.createObjectURL(imageFile);
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              resolve(imageFile);
+              return;
+            }
+            const compressedFile = new File([blob], imageFile.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      img.onerror = () => resolve(imageFile);
+    });
+  };
+
   const handleSubmitProof = async (e) => {
     e.preventDefault();
     setError('');
@@ -36,7 +84,10 @@ export const StudentDashboard = () => {
     try {
       const formData = new FormData();
       if (note) formData.append('note', note);
-      if (file) formData.append('proof_file', file);
+      if (file) {
+        const compressed = await compressImage(file);
+        formData.append('proof_file', compressed);
+      }
 
       const res = await api.post('/tickets', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
@@ -48,6 +99,7 @@ export const StudentDashboard = () => {
       setSubmitting(false);
     }
   };
+
 
   const handleDownloadQR = () => {
     if (!ticket?.qr_code_base64) return;

@@ -24,7 +24,7 @@ app = FastAPI(
 # CORS Middleware configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For dev ease; customize for prod deployment
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -48,3 +48,11 @@ async def root():
         "festival": "Onam Sadhya 2026 🌼",
         "docs": "/docs"
     }
+
+@app.get("/health")
+async def health():
+    return {
+        "status": "healthy",
+        "app": settings.PROJECT_NAME
+    }
+

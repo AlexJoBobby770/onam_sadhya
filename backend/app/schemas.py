@@ -5,7 +5,7 @@ from app.models import UserRole, TicketStatus
 
 # Auth Schemas
 class SendOTPRequest(BaseModel):
-    phone: str = Field(..., description="10-digit mobile phone number")
+    phone: str = Field(..., description="College email address (or mobile phone number)")
 
 class SendOTPResponse(BaseModel):
     message: str
@@ -15,8 +15,8 @@ class SendOTPResponse(BaseModel):
 class VerifyOTPRequest(BaseModel):
     phone: str
     otp: str
-    name: Optional[str] = "Student"
-    roll_no: Optional[str] = None
+    name: str = Field(..., description="Full Name of the student")
+    roll_no: str = Field(..., description="College Roll Number (Required)")
 
 class DevLoginRequest(BaseModel):
     phone: str
@@ -75,9 +75,17 @@ class TicketApproveRequest(BaseModel):
 class TicketRejectRequest(BaseModel):
     reason: str
 
+class BulkApproveRequest(BaseModel):
+    ticket_ids: List[str]
+    note: Optional[str] = None
+
 # Scan Schemas
 class ScanRequest(BaseModel):
     qr_token: str
+
+class ManualScanRequest(BaseModel):
+    ticket_id: str
+
 
 class ScanResponse(BaseModel):
     success: bool

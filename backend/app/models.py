@@ -11,6 +11,8 @@ def generate_uuid() -> str:
 def utc_now():
     return datetime.now(timezone.utc)
 
+default_utc_now = utc_now
+
 class UserRole(str, enum.Enum):
     STUDENT = "student"
     ADMIN = "admin"
@@ -25,7 +27,7 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
-    phone: Mapped[str] = mapped_column(String(20), unique=True, index=True, nullable=False)
+    phone: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     roll_no: Mapped[str] = mapped_column(String(50), nullable=True)
     role: Mapped[UserRole] = mapped_column(
@@ -69,8 +71,9 @@ class OTPRequest(Base):
     __tablename__ = "otp_requests"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
-    phone: Mapped[str] = mapped_column(String(20), index=True, nullable=False)
+    phone: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
     otp_code: Mapped[str] = mapped_column(String(10), nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+

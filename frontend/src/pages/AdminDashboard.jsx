@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/client';
-import { ShieldCheck, CheckCircle2, XCircle, Clock, Eye, QrCode, Search, RefreshCw } from 'lucide-react';
+import { ShieldCheck, CheckCircle2, XCircle, Clock, Eye, QrCode, Search, RefreshCw, CheckSquare, Square, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export const AdminDashboard = ({ onOpenScanner }) => {
   const [tickets, setTickets] = useState([]);
@@ -8,6 +8,14 @@ export const AdminDashboard = ({ onOpenScanner }) => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   
+  // Selection and Bulk Actions
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [bulkProcessing, setBulkProcessing] = useState(false);
+
+  // Pagination (50 per page cap)
+  const [page, setPage] = useState(1);
+  const limit = 50;
+
   // Modals state
   const [previewImage, setPreviewImage] = useState(null);
   const [rejectTicketId, setRejectTicketId] = useState(null);
@@ -15,14 +23,21 @@ export const AdminDashboard = ({ onOpenScanner }) => {
   const [processingId, setProcessingId] = useState(null);
 
   useEffect(() => {
+    setPage(1);
+    setSelectedIds(new Set());
     fetchTickets();
-  }, [statusFilter]);
+  }, [statusFilter, searchQuery, page]);
 
   const fetchTickets = async () => {
     try {
       setLoading(true);
-      const endpoint = statusFilter === 'all' ? '/admin/tickets' : `/admin/tickets?status=${statusFilter}`;
-      const res = await api.get(endpoint);
+      const params = new URLSearchParams();
+      if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
+      if (searchQuery.trim()) params.append('search', searchQuery.trim());
+      params.append('page', page.toString());
+      params.append('limit', limit.toString());
+
+      const res = await api.get(`/admin/tickets?${params.toString()}`);
       setTickets(res.data);
     } catch (err) {
       console.error('Failed to fetch tickets:', err);
@@ -59,11 +74,46 @@ export const AdminDashboard = ({ onOpenScanner }) => {
     }
   };
 
-  const filteredTickets = tickets.filter(t => 
-    t.user_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    t.user_phone?.includes(searchQuery) ||
-    t.user_roll_no?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const toggleSelect = (id) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    setSelectedIds(next);
+  };
+
+  const toggleSelectAllPending = () => {
+    const pendingTickets = tickets.filter(t => t.status === 'pending');
+    if (pendingTickets.every(t => selectedIds.has(t.id))) {
+      setSelectedIds(new Set());
+    } else {
+      const next = new Set(selectedIds);
+      pendingTickets.forEach(t => next.add(t.id));
+      setSelectedIds(next);
+    }
+  };
+
+  const handleBulkApprove = async () => {
+    if (selectedIds.size === 0) return;
+    setBulkProcessing(true);
+    try {
+      await api.post('/admin/tickets/bulk-approve', {
+        ticket_ids: Array.from(selectedIds),
+        note: 'Bulk approved by Admin'
+      });
+      setSelectedIds(new Set());
+      fetchTickets();
+    } catch (err) {
+      alert('Bulk approve failed: ' + (err.response?.data?.detail || err.message));
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
+
+  const pendingCount = tickets.filter(t => t.status === 'pending').length;
+  const isAllPendingSelected = pendingCount > 0 && tickets.filter(t => t.status === 'pending').every(t => selectedIds.has(t.id));
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
@@ -97,32 +147,57 @@ export const AdminDashboard = ({ onOpenScanner }) => {
         </div>
       </div>
 
-      {/* Filter Tabs & Search Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+      {/* Filter Tabs, Multi-Select Action & Search Bar */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         
-        <div className="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800 w-full sm:w-auto">
-          {['pending', 'approved', 'rejected', 'all'].map((status) => (
-            <button
-              key={status}
-              onClick={() => setStatusFilter(status)}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold uppercase transition ${
-                statusFilter === status
-                  ? 'bg-emerald-600 text-white shadow'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {status}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <div className="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800">
+            {['pending', 'approved', 'rejected', 'all'].map((status) => (
+              <button
+                key={status}
+                onClick={() => setStatusFilter(status)}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold uppercase transition ${
+                  statusFilter === status
+                    ? 'bg-emerald-600 text-white shadow'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {status}
+              </button>
+            ))}
+          </div>
+
+          {statusFilter === 'pending' && pendingCount > 0 && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={toggleSelectAllPending}
+                className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 transition"
+              >
+                {isAllPendingSelected ? <CheckSquare className="w-4 h-4 text-emerald-400" /> : <Square className="w-4 h-4 text-slate-500" />}
+                <span>Select All ({pendingCount})</span>
+              </button>
+
+              {selectedIds.size > 0 && (
+                <button
+                  onClick={handleBulkApprove}
+                  disabled={bulkProcessing}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow flex items-center gap-1.5 transition disabled:opacity-50"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{bulkProcessing ? 'Approving...' : `Bulk Approve (${selectedIds.size})`}</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
-        <div className="relative w-full sm:w-72">
+        <div className="relative w-full md:w-72">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search name, phone..."
+            placeholder="Search name, email, roll no..."
             className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-emerald-500"
           />
         </div>
@@ -131,7 +206,7 @@ export const AdminDashboard = ({ onOpenScanner }) => {
       {/* Tickets Grid */}
       {loading ? (
         <div className="text-center py-12 text-slate-500 text-sm">Loading submissions...</div>
-      ) : filteredTickets.length === 0 ? (
+      ) : tickets.length === 0 ? (
         <div className="bg-slate-900 border border-slate-800 p-12 rounded-2xl text-center text-slate-400 space-y-2">
           <Clock className="w-8 h-8 text-slate-600 mx-auto" />
           <p className="font-bold text-white text-sm">No tickets found</p>
@@ -139,17 +214,30 @@ export const AdminDashboard = ({ onOpenScanner }) => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredTickets.map((t) => (
+          {tickets.map((t) => (
             <div
               key={t.id}
-              className="bg-slate-900 border border-slate-800 p-5 rounded-xl flex flex-col justify-between space-y-4"
+              className={`bg-slate-900 border p-5 rounded-xl flex flex-col justify-between space-y-4 transition ${
+                selectedIds.has(t.id) ? 'border-emerald-500/80 bg-slate-900/90 shadow-lg' : 'border-slate-800'
+              }`}
             >
               <div className="space-y-2">
                 <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <h3 className="font-bold text-white text-sm">{t.user_name}</h3>
-                    <p className="text-xs text-slate-400 font-mono">Phone: {t.user_phone}</p>
+                  <div className="flex items-start gap-2.5">
+                    {t.status === 'pending' && (
+                      <button onClick={() => toggleSelect(t.id)} className="mt-0.5 text-slate-400 hover:text-emerald-400">
+                        {selectedIds.has(t.id) ? <CheckSquare className="w-4 h-4 text-emerald-400" /> : <Square className="w-4 h-4" />}
+                      </button>
+                    )}
+                    <div>
+                      <h3 className="font-bold text-white text-sm">{t.user_name}</h3>
+                      <p className="text-xs text-slate-400 font-mono">{t.user_phone}</p>
+                      {t.user_roll_no && (
+                        <p className="text-[11px] text-slate-500 font-mono">Roll: {t.user_roll_no}</p>
+                      )}
+                    </div>
                   </div>
+
                   <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${
                     t.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                     t.status === 'rejected' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
@@ -210,6 +298,30 @@ export const AdminDashboard = ({ onOpenScanner }) => {
           ))}
         </div>
       )}
+
+      {/* Pagination Controls (50 cap per page) */}
+      <div className="flex items-center justify-between pt-4 border-t border-slate-800">
+        <span className="text-xs text-slate-400 font-mono">
+          Page {page} (50 per page cap)
+        </span>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 hover:text-white transition"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setPage(p => p + 1)}
+            disabled={tickets.length < limit}
+            className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 hover:text-white transition"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
 
       {/* MODAL 1: Payment Proof Preview */}
       {previewImage && (
