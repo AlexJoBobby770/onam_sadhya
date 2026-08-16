@@ -8,6 +8,8 @@ export const StudentDashboard = () => {
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [studentName, setStudentName] = useState(user?.name || '');
+  const [rollNo, setRollNo] = useState(user?.roll_no || '');
   const [note, setNote] = useState('Paid via GPay');
   const [file, setFile] = useState(null);
   const [error, setError] = useState('');
@@ -154,9 +156,38 @@ export const StudentDashboard = () => {
             )}
 
             <form onSubmit={handleSubmitProof} className="space-y-4">
+              <div className="grid grid-cols-[1.35fr_1fr] gap-2.5">
+                <div>
+                  <label className="block text-[10.5px] font-bold uppercase tracking-[0.1em] text-onam-muted mb-1.5">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={studentName}
+                    onChange={(e) => setStudentName(e.target.value)}
+                    placeholder="Rahul Nair"
+                    className="w-full bg-onam-black border border-onam-line rounded-xl px-4 py-3 text-onam-kasavu text-sm placeholder-onam-muted-faint focus:outline-none focus:border-onam-gold-deep transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10.5px] font-bold uppercase tracking-[0.1em] text-onam-muted mb-1.5">
+                    Class / Roll No
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={rollNo}
+                    onChange={(e) => setRollNo(e.target.value)}
+                    placeholder="CS2026 / 12-A"
+                    className="w-full bg-onam-black border border-onam-line rounded-xl px-4 py-3 text-onam-kasavu text-sm font-mono uppercase placeholder-onam-muted-faint focus:outline-none focus:border-onam-gold-deep transition"
+                  />
+                </div>
+              </div>
+
               <div>
                 <label className="block text-[10.5px] font-bold uppercase tracking-[0.1em] text-onam-muted mb-1.5">
-                  Payment reference
+                  Payment Reference
                 </label>
                 <input
                   type="text"
