@@ -100,8 +100,13 @@ async def send_otp(payload: SendOTPRequest, background_tasks: BackgroundTasks, d
     await db.commit()
 
     # Dispatch email OTP asynchronously in background task so API responds instantly
-    if "@" in email_or_phone and settings.SMTP_HOST:
-        background_tasks.add_task(_send_email_otp_sync, email_or_phone, otp_code)
+    if "@" in email_or_phone:
+        smtp_host = settings.SMTP_HOST or "smtp.gmail.com"
+        smtp_user = settings.SMTP_USER or "alexjobobby770@gmail.com"
+        if smtp_host and smtp_user:
+            background_tasks.add_task(_send_email_otp_sync, email_or_phone, otp_code)
+        else:
+            print(f"--> [SMTP WARNING] Skipping email send to {email_or_phone}: SMTP_USER or SMTP_HOST is missing!")
 
     return SendOTPResponse(
         message="Verification OTP sent successfully",

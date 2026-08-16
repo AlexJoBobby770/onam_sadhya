@@ -17,11 +17,11 @@ class Settings(BaseSettings):
     COLLEGE_EMAIL_DOMAIN: str = os.getenv("COLLEGE_EMAIL_DOMAIN", "malayalamuniversity.org")
     
     # SMTP Settings for Free Email OTP
-    SMTP_HOST: str = os.getenv("SMTP_HOST", "")
-    SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
-    SMTP_USER: str = os.getenv("SMTP_USER", "")
-    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
-    SMTP_FROM: str = os.getenv("SMTP_FROM", "noreply@malayalamuniversity.org")
+    SMTP_HOST: str = os.getenv("SMTP_HOST", "smtp.gmail.com")
+    SMTP_PORT: int = int(os.getenv("SMTP_PORT", "465"))
+    SMTP_USER: str = os.getenv("SMTP_USER", "alexjobobby770@gmail.com")
+    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "zurmsizmacwjwxts")
+    SMTP_FROM: str = os.getenv("SMTP_FROM", "alexjobobby770@gmail.com")
 
     # Supabase Free Tier Storage Settings
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
