@@ -4,19 +4,33 @@
 
 @layer base {
   body {
-    @apply antialiased bg-slate-950 text-slate-100 font-sans;
+    @apply antialiased bg-onam-black text-onam-kasavu font-sans;
   }
 }
 
-/* Clean Professional UI Components */
-.glass-panel {
-  background: #0f172a;
-  border: 1px solid #1e293b;
-}
+@layer components {
+  /* Kasavu border — two gold hairlines with cream between, like a mundu edge */
+  .kasavu-band {
+    height: 9px;
+    background:
+      linear-gradient(#C9962B, #C9962B) 0 2px/100% 1.5px no-repeat,
+      linear-gradient(#C9962B, #C9962B) 0 5.5px/100% 1.5px no-repeat,
+      linear-gradient(90deg, #FFDB49, #EFC94F);
+  }
 
-.glass-card {
-  background: #1e293b;
-  border: 1px solid #334155;
+  .rule-gold {
+    height: 1px;
+    opacity: 0.55;
+    background: linear-gradient(90deg, transparent, #C9962B 22%, #FFDB49 50%, #C9962B 78%, transparent);
+  }
+
+  .btn-gold {
+    @apply rounded-xl font-bold text-onam-ink transition;
+    background: linear-gradient(180deg, #FFDB49 0%, #F0BE33 100%);
+    box-shadow: 0 4px 14px -8px rgba(255, 219, 73, 0.4);
+  }
+  .btn-gold:hover { filter: brightness(1.05); }
+  .btn-gold:disabled { opacity: 0.5; filter: none; }
 }
 
 /* Custom Scrollbar */
@@ -25,14 +39,14 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #020617;
+  background: #0A0F0B;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #24332A;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #3A4A41;
 }

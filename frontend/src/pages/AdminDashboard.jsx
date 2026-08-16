@@ -122,19 +122,19 @@ export const AdminDashboard = ({ onOpenScanner }) => {
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
       
       {/* Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-onam-deep border border-onam-line p-6 rounded-2xl">
         <div>
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <ShieldCheck className="w-6 h-6 text-emerald-400" />
+          <h2 className="text-2xl font-bold text-onam-kasavu flex items-center gap-2">
+            <ShieldCheck className="w-6 h-6 text-onam-gold" />
             <span>Admin Approvals & Verification</span>
           </h2>
-          <p className="text-xs text-slate-400 mt-1">Review student payment submissions and approve gate passes.</p>
+          <p className="text-xs text-onam-muted mt-1">Review student payment submissions and approve gate passes.</p>
         </div>
 
         <div className="flex items-center gap-3">
           <button
             onClick={fetchTickets}
-            className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:text-white transition"
+            className="p-2.5 rounded-xl bg-onam-black border border-onam-line text-onam-muted hover:text-onam-kasavu transition"
             title="Refresh List"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -142,7 +142,7 @@ export const AdminDashboard = ({ onOpenScanner }) => {
 
           <button
             onClick={onOpenScanner}
-            className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow transition flex items-center gap-2"
+            className="btn-gold px-4 py-2.5 text-xs flex items-center gap-2"
           >
             <QrCode className="w-4 h-4" />
             <span>Open Gate Scanner</span>
@@ -154,15 +154,15 @@ export const AdminDashboard = ({ onOpenScanner }) => {
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          <div className="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800">
+          <div className="flex items-center bg-onam-deep p-1 rounded-xl border border-onam-line">
             {['pending', 'approved', 'rejected', 'all'].map((status) => (
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
                 className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold uppercase transition ${
                   statusFilter === status
-                    ? 'bg-emerald-600 text-white shadow'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-onam-gold text-onam-ink shadow'
+                    : 'text-onam-muted hover:text-onam-kasavu'
                 }`}
               >
                 {status}
@@ -174,9 +174,9 @@ export const AdminDashboard = ({ onOpenScanner }) => {
             <div className="flex items-center gap-2">
               <button
                 onClick={toggleSelectAllPending}
-                className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 transition"
+                className="px-3 py-2 rounded-xl bg-onam-deep border border-onam-line text-xs font-semibold text-onam-muted hover:text-onam-kasavu flex items-center gap-1.5 transition"
               >
-                {isAllPendingSelected ? <CheckSquare className="w-4 h-4 text-emerald-400" /> : <Square className="w-4 h-4 text-slate-500" />}
+                {isAllPendingSelected ? <CheckSquare className="w-4 h-4 text-onam-gold" /> : <Square className="w-4 h-4 text-onam-muted-dim" />}
                 <span>Select All ({pendingCount})</span>
               </button>
 
@@ -184,7 +184,7 @@ export const AdminDashboard = ({ onOpenScanner }) => {
                 <button
                   onClick={handleBulkApprove}
                   disabled={bulkProcessing}
-                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow flex items-center gap-1.5 transition disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-onam-kasavu font-bold text-xs shadow flex items-center gap-1.5 transition disabled:opacity-50"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>{bulkProcessing ? 'Approving...' : `Bulk Approve (${selectedIds.size})`}</span>
@@ -195,48 +195,48 @@ export const AdminDashboard = ({ onOpenScanner }) => {
         </div>
 
         <div className="relative w-full md:w-72">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-onam-muted-dim" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search name, email, roll no..."
-            className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+            className="w-full pl-10 pr-4 py-2 rounded-xl bg-onam-deep border border-onam-line text-onam-kasavu text-xs placeholder-onam-muted-faint focus:outline-none focus:border-onam-gold-deep"
           />
         </div>
       </div>
 
       {/* Tickets Grid */}
       {loading ? (
-        <div className="text-center py-12 text-slate-500 text-sm">Loading submissions...</div>
+        <div className="text-center py-12 text-onam-muted-dim text-sm">Loading submissions...</div>
       ) : tickets.length === 0 ? (
-        <div className="bg-slate-900 border border-slate-800 p-12 rounded-2xl text-center text-slate-400 space-y-2">
-          <Clock className="w-8 h-8 text-slate-600 mx-auto" />
-          <p className="font-bold text-white text-sm">No tickets found</p>
-          <p className="text-xs text-slate-500">No submissions matching filter '{statusFilter}'.</p>
+        <div className="bg-onam-deep border border-onam-line p-12 rounded-2xl text-center text-onam-muted space-y-2">
+          <Clock className="w-8 h-8 text-onam-muted-faint mx-auto" />
+          <p className="font-bold text-onam-kasavu text-sm">No tickets found</p>
+          <p className="text-xs text-onam-muted-dim">No submissions matching filter '{statusFilter}'.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {tickets.map((t) => (
             <div
               key={t.id}
-              className={`bg-slate-900 border p-5 rounded-xl flex flex-col justify-between space-y-4 transition ${
-                selectedIds.has(t.id) ? 'border-emerald-500/80 bg-slate-900/90 shadow-lg' : 'border-slate-800'
+              className={`bg-onam-deep border p-5 rounded-xl flex flex-col justify-between space-y-4 transition ${
+                selectedIds.has(t.id) ? 'border-onam-gold/70 bg-onam-deep/90 shadow-lg' : 'border-onam-line'
               }`}
             >
               <div className="space-y-2">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-start gap-2.5">
                     {t.status === 'pending' && (
-                      <button onClick={() => toggleSelect(t.id)} className="mt-0.5 text-slate-400 hover:text-emerald-400">
-                        {selectedIds.has(t.id) ? <CheckSquare className="w-4 h-4 text-emerald-400" /> : <Square className="w-4 h-4" />}
+                      <button onClick={() => toggleSelect(t.id)} className="mt-0.5 text-onam-muted hover:text-onam-gold">
+                        {selectedIds.has(t.id) ? <CheckSquare className="w-4 h-4 text-onam-gold" /> : <Square className="w-4 h-4" />}
                       </button>
                     )}
                     <div>
-                      <h3 className="font-bold text-white text-sm">{t.user_name}</h3>
-                      <p className="text-xs text-slate-400 font-mono">{t.user_phone}</p>
+                      <h3 className="font-bold text-onam-kasavu text-sm">{t.user_name}</h3>
+                      <p className="text-xs text-onam-muted font-mono">{t.user_phone}</p>
                       {t.user_roll_no && (
-                        <p className="text-[11px] text-slate-500 font-mono">Roll: {t.user_roll_no}</p>
+                        <p className="text-[11px] text-onam-muted-dim font-mono">Roll: {t.user_roll_no}</p>
                       )}
                     </div>
                   </div>
@@ -250,8 +250,8 @@ export const AdminDashboard = ({ onOpenScanner }) => {
                   </span>
                 </div>
 
-                <div className="bg-slate-950 p-3 rounded-lg text-xs font-mono space-y-1">
-                  <p className="text-slate-300">Note: <span className="text-white font-sans">{t.payment_note || 'None'}</span></p>
+                <div className="bg-onam-black p-3 rounded-lg text-xs font-mono space-y-1">
+                  <p className="text-onam-muted">Note: <span className="text-onam-kasavu font-sans">{t.payment_note || 'None'}</span></p>
                   {t.rejection_reason && (
                     <p className="text-rose-400 font-sans">Reason: {t.rejection_reason}</p>
                   )}
@@ -261,17 +261,17 @@ export const AdminDashboard = ({ onOpenScanner }) => {
                 </div>
               </div>
 
-              <div className="space-y-2 pt-2 border-t border-slate-800">
+              <div className="space-y-2 pt-2 border-t border-onam-line">
                 {t.payment_proof_url ? (
                   <button
                     onClick={() => setPreviewImage(t.payment_proof_url)}
-                    className="w-full py-2 px-3 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-xs font-medium text-emerald-400 flex items-center justify-center gap-1.5 transition"
+                    className="w-full py-2 px-3 rounded-lg bg-onam-black hover:bg-onam-raised border border-onam-line text-xs font-medium text-onam-gold flex items-center justify-center gap-1.5 transition"
                   >
                     <Eye className="w-3.5 h-3.5" />
                     <span>View Receipt Image</span>
                   </button>
                 ) : (
-                  <div className="text-[11px] text-slate-500 italic text-center py-1">No receipt image attached</div>
+                  <div className="text-[11px] text-onam-muted-dim italic text-center py-1">No receipt image attached</div>
                 )}
 
                 {t.status === 'pending' && (
@@ -279,7 +279,7 @@ export const AdminDashboard = ({ onOpenScanner }) => {
                     <button
                       onClick={() => handleApprove(t.id)}
                       disabled={processingId === t.id}
-                      className="py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow transition flex items-center justify-center gap-1 disabled:opacity-50"
+                      className="py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-onam-kasavu font-bold text-xs shadow transition flex items-center justify-center gap-1 disabled:opacity-50"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>Approve</span>
@@ -288,7 +288,7 @@ export const AdminDashboard = ({ onOpenScanner }) => {
                     <button
                       onClick={() => { setRejectTicketId(t.id); setRejectReason('Payment reference mismatch'); }}
                       disabled={processingId === t.id}
-                      className="py-2 px-3 rounded-xl bg-slate-950 hover:bg-rose-950/40 border border-rose-500/30 text-rose-400 font-bold text-xs transition flex items-center justify-center gap-1 disabled:opacity-50"
+                      className="py-2 px-3 rounded-xl bg-onam-black hover:bg-rose-950/40 border border-rose-500/30 text-rose-400 font-bold text-xs transition flex items-center justify-center gap-1 disabled:opacity-50"
                     >
                       <XCircle className="w-3.5 h-3.5" />
                       <span>Reject</span>
@@ -303,8 +303,8 @@ export const AdminDashboard = ({ onOpenScanner }) => {
       )}
 
       {/* Pagination Controls (50 cap per page) */}
-      <div className="flex items-center justify-between pt-4 border-t border-slate-800">
-        <span className="text-xs text-slate-400 font-mono">
+      <div className="flex items-center justify-between pt-4 border-t border-onam-line">
+        <span className="text-xs text-onam-muted font-mono">
           Page {page} (50 per page cap)
         </span>
 
@@ -312,14 +312,14 @@ export const AdminDashboard = ({ onOpenScanner }) => {
           <button
             onClick={() => setPage(p => Math.max(1, p - 1))}
             disabled={page === 1}
-            className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 hover:text-white transition"
+            className="p-2 rounded-xl bg-onam-deep border border-onam-line text-onam-muted disabled:opacity-40 hover:text-onam-kasavu transition"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
           <button
             onClick={() => setPage(p => p + 1)}
             disabled={tickets.length < limit}
-            className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 hover:text-white transition"
+            className="p-2 rounded-xl bg-onam-deep border border-onam-line text-onam-muted disabled:opacity-40 hover:text-onam-kasavu transition"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -328,18 +328,18 @@ export const AdminDashboard = ({ onOpenScanner }) => {
 
       {/* MODAL 1: Payment Proof Preview */}
       {previewImage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl max-w-lg w-full space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-onam-black/80 backdrop-blur-sm">
+          <div className="bg-onam-deep border border-onam-line p-6 rounded-2xl max-w-lg w-full space-y-4 shadow-2xl">
             <div className="flex items-center justify-between">
-              <h3 className="font-bold text-white text-sm">Receipt Image Preview</h3>
-              <button onClick={() => setPreviewImage(null)} className="text-slate-400 hover:text-white">✕</button>
+              <h3 className="font-bold text-onam-kasavu text-sm">Receipt Image Preview</h3>
+              <button onClick={() => setPreviewImage(null)} className="text-onam-muted hover:text-onam-kasavu">✕</button>
             </div>
-            <div className="max-h-[60vh] overflow-auto rounded-xl bg-slate-950 p-2">
+            <div className="max-h-[60vh] overflow-auto rounded-xl bg-onam-black p-2">
               <img src={previewImage} alt="Payment Proof" className="w-full h-auto object-contain rounded" />
             </div>
             <button
               onClick={() => setPreviewImage(null)}
-              className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs transition"
+              className="w-full py-2.5 rounded-xl bg-onam-raised hover:bg-onam-line text-onam-kasavu font-semibold text-xs transition"
             >
               Close
             </button>
@@ -349,10 +349,10 @@ export const AdminDashboard = ({ onOpenScanner }) => {
 
       {/* MODAL 2: Reject Ticket Reason */}
       {rejectTicketId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl max-w-md w-full space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-onam-black/80 backdrop-blur-sm">
+          <div className="bg-onam-deep border border-onam-line p-6 rounded-2xl max-w-md w-full space-y-4 shadow-2xl">
             <h3 className="font-bold text-rose-400 text-base">Reject Ticket Request</h3>
-            <p className="text-xs text-slate-300">Enter reason for rejecting this submission.</p>
+            <p className="text-xs text-onam-muted">Enter reason for rejecting this submission.</p>
             
             <form onSubmit={handleRejectSubmit} className="space-y-4">
               <textarea
@@ -361,20 +361,20 @@ export const AdminDashboard = ({ onOpenScanner }) => {
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
                 placeholder="Enter rejection reason"
-                className="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-rose-500"
+                className="w-full p-3 rounded-xl bg-onam-black border border-onam-line text-onam-kasavu text-xs focus:outline-none focus:border-rose-500"
               />
 
               <div className="flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setRejectTicketId(null)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
+                  className="px-4 py-2 rounded-xl bg-onam-raised text-onam-muted text-xs font-semibold hover:bg-onam-line"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow"
+                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-onam-kasavu text-xs font-bold shadow"
                 >
                   Confirm Rejection
                 </button>

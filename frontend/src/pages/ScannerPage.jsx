@@ -219,13 +219,13 @@ export const ScannerPage = () => {
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
       
       {/* Header */}
-      <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-onam-deep border border-onam-line p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <QrCode className="w-6 h-6 text-emerald-400" />
-            <h2 className="text-xl font-bold text-white">Gatekeeper Gate Pass Scanner</h2>
+            <QrCode className="w-6 h-6 text-onam-gold" />
+            <h2 className="text-xl font-bold text-onam-kasavu">Gatekeeper Gate Pass Scanner</h2>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-onam-muted mt-1">
             Atomic Single-Use Gate Scanner. Reused passes and duplicate scans are permanently rejected after the first entry.
           </p>
         </div>
@@ -241,9 +241,9 @@ export const ScannerPage = () => {
 
           <button
             onClick={() => setCameraActive(!cameraActive)}
-            className="px-3.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-300 hover:bg-slate-800 transition flex items-center gap-2"
+            className="px-3.5 py-1.5 rounded-xl bg-onam-black border border-onam-line text-xs font-semibold text-onam-muted hover:bg-onam-raised transition flex items-center gap-2"
           >
-            <Camera className="w-4 h-4 text-emerald-400" />
+            <Camera className="w-4 h-4 text-onam-gold" />
             <span>{cameraActive ? 'Disable Camera' : 'Enable Camera'}</span>
           </button>
         </div>
@@ -256,7 +256,7 @@ export const ScannerPage = () => {
           {isOnline && (
             <button
               onClick={syncQueuedScans}
-              className="px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold text-[11px] flex items-center gap-1"
+              className="px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-onam-kasavu font-bold text-[11px] flex items-center gap-1"
             >
               <RefreshCw className="w-3 h-3 animate-spin" />
               <span>Sync Now</span>
@@ -272,7 +272,7 @@ export const ScannerPage = () => {
             ? 'bg-emerald-950/80 border-emerald-500 text-emerald-100'
             : scanResult.status === 'ALREADY_USED'
             ? 'bg-rose-950/80 border-rose-500 text-rose-100'
-            : 'bg-slate-900 border-amber-500 text-amber-100'
+            : 'bg-onam-deep border-amber-500 text-amber-100'
         }`}>
           
           <div className="flex items-start gap-4">
@@ -299,22 +299,22 @@ export const ScannerPage = () => {
                 }`}>
                   {scanResult.status.replace(/_/g, ' ')}
                 </span>
-                <span className="text-[10px] text-slate-400 font-mono">
+                <span className="text-[10px] text-onam-muted font-mono">
                   {new Date().toLocaleTimeString()}
                 </span>
               </div>
 
-              <h3 className="text-xl font-bold text-white">{scanResult.message}</h3>
+              <h3 className="text-xl font-bold text-onam-kasavu">{scanResult.message}</h3>
 
               {scanResult.student_name && (
                 <div className="pt-2 grid grid-cols-2 gap-3 text-xs border-t border-white/10 font-mono">
                   <div>
-                    <span className="text-slate-400 text-[10px] block uppercase">Student Name</span>
-                    <span className="text-white font-bold text-sm">{scanResult.student_name}</span>
+                    <span className="text-onam-muted text-[10px] block uppercase">Student Name</span>
+                    <span className="text-onam-kasavu font-bold text-sm">{scanResult.student_name}</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 text-[10px] block uppercase">Email / Phone</span>
-                    <span className="text-emerald-400 font-bold">{scanResult.phone || 'N/A'}</span>
+                    <span className="text-onam-muted text-[10px] block uppercase">Email / Phone</span>
+                    <span className="text-onam-kasavu font-bold">{scanResult.phone || 'N/A'}</span>
                   </div>
                 </div>
               )}
@@ -322,9 +322,9 @@ export const ScannerPage = () => {
               {scanResult.previously_scanned_at && (
                 <div className="p-3 rounded-xl bg-rose-950 border border-rose-500/30 text-rose-200 text-xs font-mono">
                   Attention: This ticket was scanned previously at{' '}
-                  <span className="text-white font-bold">
+                  <span className="text-onam-kasavu font-bold">
                     {new Date(scanResult.previously_scanned_at).toLocaleTimeString()}
-                  </span> by <span className="text-white">{scanResult.scanned_by_name || 'Gatekeeper'}</span>.
+                  </span> by <span className="text-onam-kasavu">{scanResult.scanned_by_name || 'Gatekeeper'}</span>.
                 </div>
               )}
             </div>
@@ -332,7 +332,7 @@ export const ScannerPage = () => {
 
           <button
             onClick={() => setScanResult(null)}
-            className="mt-4 w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-bold text-slate-200 transition"
+            className="mt-4 w-full py-2.5 rounded-xl bg-onam-deep hover:bg-onam-raised border border-onam-line text-xs font-bold text-onam-kasavu transition"
           >
             Ready for Next Scan
           </button>
@@ -341,48 +341,48 @@ export const ScannerPage = () => {
 
       {/* CAMERA SCANNER BOX */}
       {cameraActive && (
-        <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl text-center space-y-4">
-          <div className="text-xs font-semibold text-emerald-400">
+        <div className="bg-onam-deep border border-onam-line p-6 rounded-2xl text-center space-y-4">
+          <div className="text-xs font-semibold text-onam-gold">
             Point camera at student QR code pass
           </div>
 
-          <div id="qr-reader" className="w-full max-w-md mx-auto rounded-xl overflow-hidden border border-slate-800 bg-slate-950" />
+          <div id="qr-reader" className="w-full max-w-md mx-auto rounded-xl overflow-hidden border border-onam-line bg-onam-black" />
         </div>
       )}
 
       {/* MANUAL SEARCH & "MARK AS ENTERED" FOR DEAD PHONES */}
-      <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
-        <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-          <UserCheck className="w-4 h-4 text-emerald-400" />
+      <div className="bg-onam-deep border border-onam-line p-6 rounded-2xl space-y-4">
+        <h4 className="text-xs font-bold text-onam-muted uppercase tracking-wider flex items-center gap-2">
+          <UserCheck className="w-4 h-4 text-onam-gold" />
           <span>Manual Entry Search (For Dead Phones)</span>
         </h4>
 
         <div className="relative">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-onam-muted-dim" />
           <input
             type="text"
             value={manualSearch}
             onChange={(e) => setManualSearch(e.target.value)}
             placeholder="Search approved student by name, email, roll number..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-onam-black border border-onam-line text-onam-kasavu text-xs placeholder-onam-muted-faint focus:outline-none focus:border-onam-gold-deep font-mono"
           />
         </div>
 
         {manualSearch.trim() && (
-          <div className="max-h-48 overflow-y-auto space-y-2 border-t border-slate-800 pt-3">
+          <div className="max-h-48 overflow-y-auto space-y-2 border-t border-onam-line pt-3">
             {filteredApproved.length === 0 ? (
-              <p className="text-xs text-slate-500 text-center py-2">No matching unentered approved passes found.</p>
+              <p className="text-xs text-onam-muted-dim text-center py-2">No matching unentered approved passes found.</p>
             ) : (
               filteredApproved.map((t) => (
-                <div key={t.ticket_id} className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                <div key={t.ticket_id} className="p-3 rounded-xl bg-onam-black border border-onam-line flex items-center justify-between">
                   <div className="text-xs">
-                    <p className="font-bold text-white">{t.user_name}</p>
-                    <p className="text-[11px] text-slate-400 font-mono">{t.user_phone} {t.user_roll_no ? `| Roll: ${t.user_roll_no}` : ''}</p>
+                    <p className="font-bold text-onam-kasavu">{t.user_name}</p>
+                    <p className="text-[11px] text-onam-muted font-mono">{t.user_phone} {t.user_roll_no ? `| Roll: ${t.user_roll_no}` : ''}</p>
                   </div>
                   <button
                     onClick={() => handleManualScanSubmit(t.ticket_id)}
                     disabled={loading}
-                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow transition disabled:opacity-50"
+                    className="btn-gold px-3 py-1.5 text-xs disabled:opacity-50"
                   >
                     Mark as Entered
                   </button>
@@ -394,9 +394,9 @@ export const ScannerPage = () => {
       </div>
 
       {/* MANUAL TOKEN INPUT FALLBACK */}
-      <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-3">
-        <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-          <Keyboard className="w-4 h-4 text-emerald-400" />
+      <div className="bg-onam-deep border border-onam-line p-6 rounded-2xl space-y-3">
+        <h4 className="text-xs font-bold text-onam-muted uppercase tracking-wider flex items-center gap-2">
+          <Keyboard className="w-4 h-4 text-onam-gold" />
           <span>Manual Token String Validation</span>
         </h4>
 
@@ -406,12 +406,12 @@ export const ScannerPage = () => {
             value={manualToken}
             onChange={(e) => setManualToken(e.target.value)}
             placeholder="Paste signed QR token string..."
-            className="flex-1 px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-mono focus:outline-none focus:border-emerald-500"
+            className="flex-1 px-4 py-2.5 rounded-xl bg-onam-black border border-onam-line text-onam-kasavu text-xs font-mono focus:outline-none focus:border-onam-gold-deep"
           />
           <button
             type="submit"
             disabled={loading || !manualToken.trim()}
-            className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow transition disabled:opacity-50"
+            className="btn-gold px-4 py-2.5 text-xs disabled:opacity-50"
           >
             Validate Token
           </button>

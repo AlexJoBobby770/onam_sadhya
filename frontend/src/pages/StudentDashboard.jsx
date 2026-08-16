@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { Ticket, Upload, CheckCircle2, XCircle, Clock, Download, AlertCircle } from 'lucide-react';
+import { Upload, XCircle, Clock, Download, AlertCircle, Ticket } from 'lucide-react';
 
 export const StudentDashboard = () => {
   const { user } = useAuth();
@@ -100,7 +100,6 @@ export const StudentDashboard = () => {
     }
   };
 
-
   const handleDownloadQR = () => {
     if (!ticket?.qr_code_base64) return;
     const link = document.createElement('a');
@@ -114,190 +113,189 @@ export const StudentDashboard = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-onam-gold"></div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-      
-      {/* User Welcome Banner */}
-      <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-white">
-            Welcome, {user?.name}
-          </h2>
-          <p className="text-xs text-slate-400 mt-1">
-            Registered Phone: <span className="font-mono text-slate-200">{user?.phone}</span>
-          </p>
-        </div>
-      </div>
+    <div className="max-w-md mx-auto px-4 py-8">
 
-      {/* CASE 1: NO TICKET YET OR REJECTED -> SHOW SUBMISSION FORM */}
+      {/* CASE 1: NO TICKET YET OR REJECTED -> SUBMISSION FORM */}
       {(!ticket || ticket.status === 'rejected') && (
-        <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-6">
-          
-          {ticket?.status === 'rejected' && (
-            <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm flex items-start gap-3">
-              <XCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-bold">Previous Request Rejected</p>
-                <p className="text-xs text-rose-300/80 mt-0.5">Reason: {ticket.rejection_reason || 'Invalid payment details'}</p>
-                <p className="text-xs text-slate-400 mt-2">Please submit updated proof below.</p>
-              </div>
-            </div>
-          )}
+        <div className="bg-onam-deep border border-onam-line rounded-2xl overflow-hidden">
+          <div className="p-6 space-y-5">
 
-          <div className="space-y-1">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <Upload className="w-5 h-5 text-emerald-400" />
-              <span>Submit Payment Details for Sadhya Pass</span>
-            </h3>
-            <p className="text-xs text-slate-400">Upload payment receipt screenshot or enter payment reference note for admin verification.</p>
-          </div>
-
-          {error && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmitProof} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Payment Reference / Note</label>
-              <input
-                type="text"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="e.g. Paid Rs. 250 via GPay to Committee Member"
-                className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:outline-none focus:border-emerald-500 transition"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Upload Receipt Image (Optional)</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setFile(e.target.files[0])}
-                className="w-full px-4 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 text-xs file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-600 file:text-white cursor-pointer"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow transition flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              <Ticket className="w-4 h-4" />
-              <span>{submitting ? 'Submitting Payment Proof...' : 'Request Pass'}</span>
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* CASE 2: PENDING APPROVAL */}
-      {ticket && ticket.status === 'pending' && (
-        <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center space-y-4">
-          <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto text-amber-400">
-            <Clock className="w-6 h-6" />
-          </div>
-          <h3 className="text-xl font-bold text-white">Payment Proof Under Review</h3>
-          <p className="text-xs text-slate-400 max-w-md mx-auto">
-            Your payment submission is being verified by committee admins. Your QR pass will appear here once approved.
-          </p>
-          <div className="inline-block px-3 py-1 rounded-lg bg-slate-950 border border-slate-800 text-xs text-amber-400 font-mono">
-            Status: Pending Approval
-          </div>
-        </div>
-      )}
-
-      {/* CASE 3: APPROVED -> DISPLAY QR PASS CARD */}
-      {ticket && ticket.status === 'approved' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-          
-          {/* Header */}
-          <div className="bg-slate-950 p-6 border-b border-slate-800 flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-bold text-white uppercase tracking-wide">Sadhya Gate Entry Pass</h3>
-              <p className="text-xs text-slate-400">Single-Use Official Fest Pass</p>
-            </div>
-            <div className="px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Approved</span>
-            </div>
-          </div>
-
-          {/* Ticket Content */}
-          <div className="p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-8">
-            
-            <div className="space-y-4 text-left w-full md:w-1/2">
-              <div>
-                <p className="text-[11px] font-bold text-slate-400 uppercase">Pass Holder</p>
-                <p className="text-2xl font-bold text-white">{user.name}</p>
-              </div>
-
-              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-xs">
-                <p className="text-slate-400">Phone: <span className="text-white">{user.phone}</span></p>
-                {user.roll_no && <p className="text-slate-400">Roll No: <span className="text-white">{user.roll_no}</span></p>}
-              </div>
-
-              {/* Status Indicator */}
-              <div className={`p-4 rounded-xl border text-xs font-medium ${
-                ticket.used
-                  ? 'bg-rose-500/10 border-rose-500/20 text-rose-300'
-                  : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
-              }`}>
-                <p className="font-bold flex items-center gap-1.5 text-sm">
-                  {ticket.used ? (
-                    <>
-                      <XCircle className="w-4 h-4 text-rose-400" />
-                      <span>Gate Entry Completed (Used)</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                      <span>Ready for Gate Entry (Single Use)</span>
-                    </>
-                  )}
-                </p>
-                <p className="text-[11px] opacity-80 mt-1">
-                  {ticket.used
-                    ? `Scanned at gate on ${new Date(ticket.scanned_at).toLocaleTimeString()}`
-                    : 'Present this QR code at hall entry for gate verification.'}
-                </p>
-              </div>
-            </div>
-
-            {/* QR Image */}
-            <div className="flex flex-col items-center gap-4 bg-slate-950 p-6 rounded-xl border border-slate-800">
-              {ticket.qr_code_base64 ? (
-                <div className="bg-white p-3 rounded-xl border border-slate-700">
-                  <img
-                    src={ticket.qr_code_base64}
-                    alt="Sadhya QR Code"
-                    className="w-48 h-48 object-contain rounded"
-                  />
+            {ticket?.status === 'rejected' && (
+              <div className="p-4 rounded-xl bg-onam-red/10 border border-onam-red/30 flex items-start gap-3">
+                <XCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold text-red-300 text-sm">Previous request rejected</p>
+                  <p className="text-xs text-red-300/80 mt-0.5">
+                    {ticket.rejection_reason || 'Invalid payment details'}
+                  </p>
+                  <p className="text-xs text-onam-muted mt-2">Submit updated proof below.</p>
                 </div>
-              ) : (
-                <div className="w-48 h-48 bg-slate-900 rounded-xl flex items-center justify-center text-slate-500 text-xs">
-                  Loading QR Code...
-                </div>
-              )}
+              </div>
+            )}
+
+            <div>
+              <h3 className="font-serif text-xl font-semibold text-onam-kasavu">Request your pass</h3>
+              <p className="text-xs text-onam-muted mt-1.5 leading-relaxed">
+                Pay ₹250 by UPI to a committee member, then upload the receipt here for verification.
+              </p>
+            </div>
+
+            {error && (
+              <div className="p-3 rounded-xl bg-onam-red/10 border border-onam-red/30 text-red-300 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmitProof} className="space-y-4">
+              <div>
+                <label className="block text-[10.5px] font-bold uppercase tracking-[0.1em] text-onam-muted mb-1.5">
+                  Payment reference
+                </label>
+                <input
+                  type="text"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="e.g. GPay to Arjun, 8pm"
+                  className="w-full bg-onam-black border border-onam-line rounded-xl px-4 py-3 text-onam-kasavu text-sm placeholder-onam-muted-faint focus:outline-none focus:border-onam-gold-deep transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10.5px] font-bold uppercase tracking-[0.1em] text-onam-muted mb-1.5">
+                  Receipt screenshot
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setFile(e.target.files[0])}
+                  className="w-full bg-onam-black border border-onam-line rounded-xl px-4 py-2.5 text-onam-muted text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-onam-gold file:text-onam-ink cursor-pointer"
+                />
+              </div>
 
               <button
-                onClick={handleDownloadQR}
-                className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow transition flex items-center justify-center gap-2"
+                type="submit"
+                disabled={submitting}
+                className="btn-gold w-full py-3.5 px-4 text-sm flex items-center justify-center gap-2"
               >
-                <Download className="w-4 h-4" />
-                <span>Download Pass</span>
+                <Ticket className="w-4 h-4" />
+                <span>{submitting ? 'Submitting…' : 'Request pass'}</span>
               </button>
-            </div>
+            </form>
+          </div>
+        </div>
+      )}
 
+      {/* CASE 2: PENDING */}
+      {ticket && ticket.status === 'pending' && (
+        <div className="bg-onam-deep border border-onam-line rounded-2xl overflow-hidden text-center">
+          <div className="p-8 space-y-4">
+            <div className="w-12 h-12 rounded-full bg-onam-orange/10 border border-onam-orange/30 flex items-center justify-center mx-auto text-onam-orange">
+              <Clock className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-serif text-xl font-semibold text-onam-kasavu">Under review</h3>
+              <p className="text-xs text-onam-muted mt-2 leading-relaxed max-w-xs mx-auto">
+                A committee member is checking your payment. Your pass appears here once approved.
+              </p>
+            </div>
+            <div className="inline-block px-3 py-1 rounded-lg bg-onam-black border border-onam-line text-[11px] text-onam-orange font-mono">
+              Pending approval
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CASE 3: APPROVED -> THE PASS */}
+      {ticket && ticket.status === 'approved' && (
+        <div>
+          <div className="text-center mb-5">
+            <h3 className="font-serif text-xl font-semibold text-onam-kasavu">
+              {ticket.used ? 'Pass already used' : 'Your pass is ready'}
+            </h3>
+            <p className="text-xs text-onam-muted mt-1">
+              {ticket.used ? 'This pass has been scanned at the gate' : 'Show this at the hall entrance'}
+            </p>
           </div>
 
+          {/* Cream kasavu pass — deliberately inverted against the dark app shell */}
+          <div className={`relative bg-onam-kasavu rounded-2xl overflow-hidden shadow-2xl ${ticket.used ? 'opacity-60' : ''}`}>
+            <div className="kasavu-band" />
+
+            <div className="px-5 pt-4 text-center">
+              <p className="font-mono text-[9.5px] tracking-[0.2em] uppercase text-onam-ink-soft/70 mb-2.5">
+                Onam Sadhya · 21 Aug 2026
+              </p>
+              <p className="text-[9.5px] font-bold tracking-[0.14em] uppercase text-onam-ink-soft/70 mb-1">
+                Pass holder
+              </p>
+              <h4 className="font-serif text-[25px] font-semibold text-onam-ink leading-tight mb-2">
+                {user.name}
+              </h4>
+              <div className="flex justify-center gap-4 font-mono text-[11px] text-onam-ink-soft">
+                {user.roll_no && <span>{user.roll_no}</span>}
+                {user.roll_no && <span>·</span>}
+                <span>₹250 paid</span>
+              </div>
+            </div>
+
+            <div className="flex justify-center px-5 pt-4 pb-1.5">
+              {ticket.qr_code_base64 ? (
+                <div className="bg-white p-2.5 rounded-xl border border-onam-kasavu-dim">
+                  <img src={ticket.qr_code_base64} alt="Sadhya gate pass QR code" className="w-40 h-40 block" />
+                </div>
+              ) : (
+                <div className="w-44 h-44 bg-onam-kasavu-dim rounded-xl flex items-center justify-center text-onam-ink-soft text-xs">
+                  Loading QR…
+                </div>
+              )}
+            </div>
+
+            {/* perforation — notches punch through to the page background */}
+            <div className="relative h-6">
+              <div className="absolute top-1/2 -translate-y-1/2 -left-2.5 w-5 h-5 rounded-full bg-onam-black" />
+              <div className="absolute top-1/2 -translate-y-1/2 -right-2.5 w-5 h-5 rounded-full bg-onam-black" />
+              <div className="absolute top-1/2 left-4 right-4 border-t-[1.5px] border-dashed border-onam-kasavu-dim" />
+            </div>
+
+            <div className="px-5 pb-4">
+              {ticket.used ? (
+                <div className="flex items-center justify-center gap-2 rounded-lg border border-onam-red/40 bg-onam-red/10 py-2.5 text-[12.5px] font-bold text-onam-red">
+                  <XCircle className="w-4 h-4" />
+                  Entered {ticket.scanned_at ? `at ${new Date(ticket.scanned_at).toLocaleTimeString()}` : ''}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2 rounded-lg border border-onam-leaf/40 bg-onam-leaf/15 py-2.5 text-[12.5px] font-bold text-[#2F6B18]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#4E9E24]" />
+                  Valid · single use
+                </div>
+              )}
+              <p className="font-mono text-[9.5px] text-onam-ink-soft/60 text-center mt-2.5 tracking-wide">
+                {ticket.id.slice(0, 8).toUpperCase()} · {ticket.id.slice(9, 13).toUpperCase()}
+              </p>
+            </div>
+
+            <div className="kasavu-band" />
+          </div>
+
+          <button
+            onClick={handleDownloadQR}
+            className="btn-gold w-full mt-4 py-3.5 px-4 text-sm flex items-center justify-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Save pass
+          </button>
+
+          <div className="mt-4 rounded-xl bg-onam-deep border border-onam-line border-l-2 border-l-onam-orange px-3.5 py-3 text-[11.5px] leading-relaxed text-onam-muted">
+            <b className="text-onam-kasavu font-medium">Save it now.</b> The hall may have patchy
+            signal, and a saved pass still scans.
+          </div>
         </div>
       )}
 

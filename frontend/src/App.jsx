@@ -28,9 +28,9 @@ const MainApp = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
+    <div className="min-h-screen flex flex-col bg-onam-black text-onam-kasavu">
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
-      
+
       <main className="flex-1 pb-16">
         {activeTab === 'student' && <StudentDashboard />}
         {activeTab === 'admin' && isAdmin && <AdminDashboard onOpenScanner={() => setActiveTab('scanner')} />}
@@ -38,8 +38,8 @@ const MainApp = () => {
         {activeTab === 'super_admin' && isSuperAdmin && <SuperAdminDashboard />}
       </main>
 
-      <footer className="border-t border-slate-900 py-6 text-center text-xs text-slate-500 font-sans">
-        <p>Onam Sadhya QR Ticketing System • College Gate Verification Portal</p>
+      <footer className="border-t border-onam-line py-6 text-center text-[11px] text-onam-muted-faint">
+        <p>Onam Sadhya · College Gate Verification</p>
       </footer>
     </div>
   );
