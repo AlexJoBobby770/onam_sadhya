@@ -245,7 +245,7 @@ export const Login = () => {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="btn-gold w-full py-3 text-xs font-bold"
+                      className="btn-leaf w-full py-3.5 text-[13px] font-bold"
                     >
                       {loading ? 'Signing in…' : 'Continue with Google Account'}
                     </button>
