@@ -17,10 +17,9 @@ from app.utils.security import generate_otp, create_access_token
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-def _send_email_otp_sync(recipient_email: str, otp_code: str):
+def _send_email_otp_sync(recipient_email: str, otp_code: str) -> bool:
     if not settings.SMTP_HOST or not settings.SMTP_USER:
-        # SMTP credentials not provided; OTP saved in DB
-        return
+        return False
     try:
         msg = MIMEText(
             f"Greetings from Onam Sadhya Organising Committee!\n\n"
@@ -36,9 +35,11 @@ def _send_email_otp_sync(recipient_email: str, otp_code: str):
             server.starttls()
             server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
             server.send_message(msg)
-            print(f"--> [EMAIL SENT] Verification OTP {otp_code} dispatched to {recipient_email}")
+        print(f"--> [EMAIL SENT] OTP dispatched to {recipient_email}")
+        return True
     except Exception as e:
         print(f"--> [EMAIL ERROR] Failed to dispatch OTP to {recipient_email}: {e}")
+        return False
 
 import re
 
@@ -63,7 +64,7 @@ async def send_otp(payload: SendOTPRequest, db: AsyncSession = Depends(get_db)):
         OTPRequest.created_at >= cutoff
     )
     result = await db.execute(stmt)
-    recent = result.scalar_one_or_none()
+    recent = result.scalars().first()
     if recent:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -82,9 +83,14 @@ async def send_otp(payload: SendOTPRequest, db: AsyncSession = Depends(get_db)):
     db.add(otp_req)
     await db.commit()
 
-    # Dispatch email OTP in background thread
-    if "@" in email_or_phone:
-        await asyncio.to_thread(_send_email_otp_sync, email_or_phone, otp_code)
+    # Dispatch email OTP; only raise on a real send failure, not on SMTP being unconfigured (dev mode)
+    if "@" in email_or_phone and settings.SMTP_HOST:
+        sent = await asyncio.to_thread(_send_email_otp_sync, email_or_phone, otp_code)
+        if not sent:
+            raise HTTPException(
+                status_code=502,
+                detail="Could not send the verification email right now. Please try again shortly."
+            )
 
     return SendOTPResponse(
         message="Verification OTP sent successfully",
@@ -100,18 +106,23 @@ async def verify_otp(payload: VerifyOTPRequest, db: AsyncSession = Depends(get_d
     if not payload.roll_no or not payload.roll_no.strip():
         raise HTTPException(status_code=400, detail="College Roll Number is required for signup.")
 
-    # Find valid unexpired OTP
+    # Find the latest pending OTP for this email, regardless of the code entered,
+    # so wrong guesses can be counted against it
     now = datetime.now(timezone.utc)
     stmt = select(OTPRequest).where(
         OTPRequest.phone == phone_or_email,
-        OTPRequest.otp_code == otp,
         OTPRequest.verified == False,
         OTPRequest.expires_at > now
     ).order_by(OTPRequest.created_at.desc())
     result = await db.execute(stmt)
-    otp_record = result.scalar_one_or_none()
+    otp_record = result.scalars().first()
 
-    if not otp_record:
+    if not otp_record or otp_record.attempts >= 5:
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP code. Please request a new one.")
+
+    if otp_record.otp_code != otp:
+        otp_record.attempts += 1
+        await db.commit()
         raise HTTPException(status_code=400, detail="Invalid or expired OTP code")
 
     # Mark OTP as verified
