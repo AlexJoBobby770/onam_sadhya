@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: onam-sadhya-backend
+    env: python
+    region: singapore
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    rootDir: backend
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DEV_MODE
+        value: "false"
+      - key: ADMIN_EMAIL
+        value: alexjobobby770@gmail.com
+      - key: FRONTEND_URL
+        value: https://onam-sadhya-lemon.vercel.app
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "465"
+      - key: SMTP_USER
+        value: alexjobobby770@gmail.com
+      - key: SMTP_PASSWORD
+        value: zurmsizmacwjwxts
+      - key: SMTP_FROM
+        value: alexjobobby770@gmail.com
