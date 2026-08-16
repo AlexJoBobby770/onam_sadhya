@@ -62,6 +62,7 @@ async def root():
 async def health():
     return {
         "status": "healthy",
-        "app": settings.PROJECT_NAME
+        "app": settings.PROJECT_NAME,
+        "dev_mode": settings.DEV_MODE
     }
 

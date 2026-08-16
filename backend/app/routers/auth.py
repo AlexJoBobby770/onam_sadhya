@@ -197,3 +197,9 @@ async def dev_login(payload: DevLoginRequest, db: AsyncSession = Depends(get_db)
         token_type="bearer",
         user=UserResponse.model_validate(user)
     )
+
+@router.get("/config")
+async def get_auth_config():
+    return {
+        "dev_mode": settings.DEV_MODE
+    }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/client';
 import { Pookalam } from '../components/Pookalam';
@@ -14,6 +14,22 @@ export const Login = () => {
   const [devOtpHint, setDevOtpHint] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [devModeEnabled, setDevModeEnabled] = useState(false);
+
+  useEffect(() => {
+    checkDevMode();
+  }, []);
+
+  const checkDevMode = async () => {
+    try {
+      const res = await api.get('/auth/config');
+      if (res.data && res.data.dev_mode) {
+        setDevModeEnabled(true);
+      }
+    } catch (e) {
+      // Ignore if dev_mode check fails
+    }
+  };
 
   const handleSendOTP = async (e) => {
     e.preventDefault();
@@ -215,30 +231,32 @@ export const Login = () => {
               </form>
             )}
 
-            {/* Dev shortcuts — secondary by design, only works while backend DEV_MODE is on */}
-            <div className="mt-8">
-              <p className="font-mono text-[9.5px] tracking-[0.16em] uppercase text-onam-muted-faint text-center mb-2.5">
-                Dev quick login
-              </p>
-              <div className="grid grid-cols-3 rounded-xl overflow-hidden border border-onam-line bg-onam-black">
-                {[
-                  { role: 'student', label: 'Student' },
-                  { role: 'admin', label: 'Admin' },
-                  { role: 'super_admin', label: 'Super' },
-                ].map((item, i) => (
-                  <button
-                    key={item.role}
-                    type="button"
-                    onClick={() => handleQuickDevLogin(item.role)}
-                    className={`py-2.5 px-1.5 text-[11.5px] font-medium text-onam-muted hover:bg-onam-raised hover:text-onam-kasavu transition ${
-                      i < 2 ? 'border-r border-onam-line' : ''
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
+            {/* Dev shortcuts — secondary by design, only rendered when backend DEV_MODE is true */}
+            {devModeEnabled && (
+              <div className="mt-8">
+                <p className="font-mono text-[9.5px] tracking-[0.16em] uppercase text-onam-muted-faint text-center mb-2.5">
+                  Dev quick login
+                </p>
+                <div className="grid grid-cols-3 rounded-xl overflow-hidden border border-onam-line bg-onam-black">
+                  {[
+                    { role: 'student', label: 'Student' },
+                    { role: 'admin', label: 'Admin' },
+                    { role: 'super_admin', label: 'Super' },
+                  ].map((item, i) => (
+                    <button
+                      key={item.role}
+                      type="button"
+                      onClick={() => handleQuickDevLogin(item.role)}
+                      className={`py-2.5 px-1.5 text-[11.5px] font-medium text-onam-muted hover:bg-onam-raised hover:text-onam-kasavu transition ${
+                        i < 2 ? 'border-r border-onam-line' : ''
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
           </div>
         </div>
