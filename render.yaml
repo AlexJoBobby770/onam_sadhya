@@ -16,13 +16,21 @@ services:
         value: alexjobobby770@gmail.com
       - key: FRONTEND_URL
         value: https://onam-sadhya-lemon.vercel.app
+      - key: DATABASE_URL
+        sync: false
+      - key: SECRET_KEY
+        sync: false
       - key: SMTP_HOST
-        value: smtp.gmail.com
+        sync: false
       - key: SMTP_PORT
-        value: "465"
+        sync: false
       - key: SMTP_USER
-        value: alexjobobby770@gmail.com
+        sync: false
       - key: SMTP_PASSWORD
-        value: zurmsizmacwjwxts
+        sync: false
       - key: SMTP_FROM
-        value: alexjobobby770@gmail.com
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
