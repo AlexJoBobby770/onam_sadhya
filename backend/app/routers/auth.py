@@ -1,4 +1,4 @@
-import asyncio
+import socket
 import smtplib
 from email.mime.text import MIMEText
 from datetime import datetime, timedelta, timezone
@@ -31,7 +31,17 @@ def _send_email_otp_sync(recipient_email: str, otp_code: str) -> bool:
         msg["From"] = settings.SMTP_FROM or settings.SMTP_USER
         msg["To"] = recipient_email
 
-        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
+        # Resolve IPv4 host explicitly for Linux/Render containers to avoid IPv6 Errno 101 Network is unreachable
+        target_host = settings.SMTP_HOST
+        try:
+            addrs = socket.getaddrinfo(settings.SMTP_HOST, settings.SMTP_PORT, socket.AF_INET, socket.SOCK_STREAM)
+            if addrs:
+                target_host = addrs[0][4][0]
+        except Exception:
+            pass
+
+        with smtplib.SMTP(target_host, settings.SMTP_PORT, timeout=10) as server:
+            server.ehlo()
             server.starttls()
             server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
             server.send_message(msg)
