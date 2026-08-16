@@ -157,34 +157,8 @@ export const Login = () => {
               </div>
             )}
 
-            {/* Quick 1-Tap Google Sign In */}
             {step === 'email' && (
-              <div className="mb-5">
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => handleGoogleSignIn()}
-                  className="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-white font-medium text-xs shadow-md transition flex items-center justify-center gap-2.5 active:scale-[0.98]"
-                >
-                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
-                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.28v3.13C3.25 21.3 7.31 24 12 24z"/>
-                    <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.6H1.28C.46 8.23 0 10.06 0 12s.46 3.77 1.28 5.4h4z"/>
-                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.7 1.28 6.6l4 3.13c.95-2.83 3.6-4.98 6.72-4.98z"/>
-                  </svg>
-                  <span>Fast 1-Tap Google Sign In</span>
-                </button>
-
-                <div className="relative my-4 flex items-center justify-center">
-                  <div className="border-t border-onam-line w-full"></div>
-                  <span className="bg-onam-deep px-3 font-mono text-[9.5px] uppercase tracking-[0.14em] text-onam-muted-faint relative">OR EMAIL OTP</span>
-                  <div className="border-t border-onam-line w-full"></div>
-                </div>
-              </div>
-            )}
-
-            {step === 'email' && (
-              <form onSubmit={handleSendOTP}>
+              <form onSubmit={(e) => { e.preventDefault(); handleGoogleSignIn(); }}>
                 {/* name + roll share a row so the submit button stays above the fold on small phones */}
                 <div className="grid grid-cols-[1.35fr_1fr] gap-2.5">
                   <div>
@@ -199,20 +173,20 @@ export const Login = () => {
                     />
                   </div>
                   <div>
-                    <label className={labelClass}>Roll no</label>
+                    <label className={labelClass}>Roll / Class No</label>
                     <input
                       type="text"
                       required
                       value={rollNo}
                       onChange={(e) => setRollNo(e.target.value)}
-                      placeholder="CS2026"
+                      placeholder="CS2026 / 12-A"
                       className={`${inputClass} font-mono uppercase`}
                     />
                   </div>
                 </div>
 
                 <div className="mt-3.5">
-                  <label className={labelClass}>Email address</label>
+                  <label className={labelClass}>Google / Student Email</label>
                   <input
                     type="email"
                     required
@@ -221,19 +195,31 @@ export const Login = () => {
                     placeholder="student@gmail.com"
                     className={`${inputClass} font-mono`}
                   />
-                  <p className="text-[11px] text-onam-muted-dim mt-2 leading-relaxed">
-                    We'll send a 6-digit code here. Any personal email works.
-                  </p>
                 </div>
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="btn-gold w-full mt-5 py-[15px] px-4 text-sm flex items-center justify-center gap-2"
+                  className="btn-gold w-full mt-5 py-[15px] px-4 text-sm flex items-center justify-center gap-2.5 shadow-lg active:scale-[0.98]"
                 >
-                  <span>{loading ? 'Sending code…' : 'Send verification code'}</span>
-                  {!loading && <ArrowRight className="w-4 h-4" />}
+                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.28v3.13C3.25 21.3 7.31 24 12 24z"/>
+                    <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.6H1.28C.46 8.23 0 10.06 0 12s.46 3.77 1.28 5.4h4z"/>
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.7 1.28 6.6l4 3.13c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                  </svg>
+                  <span>{loading ? 'Authenticating…' : 'Sign in & Continue to Pass'}</span>
                 </button>
+
+                <div className="mt-4 text-center">
+                  <button
+                    type="button"
+                    onClick={() => setStep('otp')}
+                    className="text-[11px] text-onam-muted-dim hover:text-onam-gold transition"
+                  >
+                    Enter 6-digit Code / Admin Key
+                  </button>
+                </div>
               </form>
             )}
 
