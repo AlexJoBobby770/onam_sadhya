@@ -54,7 +54,7 @@ export const Login = () => {
         await devLogin('superadmin@gmail.com', 'Dr. Radhakrishnan (Super Admin)', 'super_admin');
       }
     } catch (err) {
-      setError('Dev login failed');
+      setError(err.response?.data?.detail || 'Quick dev login is disabled in production. Please use Email OTP below to log in.');
     }
   };
 
