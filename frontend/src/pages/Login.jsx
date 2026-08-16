@@ -7,9 +7,9 @@ import { ArrowRight, AlertCircle } from 'lucide-react';
 export const Login = () => {
   const { loginWithToken, devLogin } = useAuth();
   const [step, setStep] = useState('email'); // 'email' | 'otp'
-  const [name, setName] = useState('Rahul Nair');
-  const [email, setEmail] = useState('rahul.nair@gmail.com');
-  const [rollNo, setRollNo] = useState('CS2026');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [rollNo, setRollNo] = useState('');
   const [otp, setOtp] = useState('');
   const [devOtpHint, setDevOtpHint] = useState('');
   const [loading, setLoading] = useState(false);
@@ -75,25 +75,75 @@ export const Login = () => {
     }
   };
 
-  const handleGoogleSignIn = async (credentialData = null) => {
-    setError('');
-    if (!email.trim() || !email.includes('@')) {
-      setError('Please enter your email address to sign in with Google');
+  const [showEmailInput, setShowEmailInput] = useState(false);
+
+  useEffect(() => {
+    checkDevMode();
+    loadGoogleGSI();
+  }, []);
+
+  const loadGoogleGSI = () => {
+    if (window.google?.accounts?.id) {
+      initGoogleGSI();
       return;
     }
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => initGoogleGSI();
+    document.body.appendChild(script);
+  };
+
+  const initGoogleGSI = () => {
+    try {
+      if (window.google?.accounts?.id) {
+        window.google.accounts.id.initialize({
+          client_id: '1098654897854-onamsadhya2026.apps.googleusercontent.com',
+          callback: (response) => {
+            if (response?.credential) {
+              handleGoogleCredential(response.credential);
+            }
+          }
+        });
+      }
+    } catch (e) {
+      console.warn('Google GSI Init:', e);
+    }
+  };
+
+  const handleGoogleCredential = async (credentialToken, manualEmail = '') => {
+    setError('');
     setLoading(true);
     try {
       const res = await api.post('/auth/google', {
-        credential: credentialData?.credential || null,
-        email: email.trim().toLowerCase(),
-        name: name.trim() || 'Student',
-        roll_no: rollNo.trim() || 'G-2026'
+        credential: credentialToken || null,
+        email: manualEmail ? manualEmail.trim().toLowerCase() : null,
+        name: '',
+        roll_no: ''
       });
       loginWithToken(res.data.access_token, res.data.user);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Google authentication failed. Please try again.');
+      setError(err.response?.data?.detail || 'Google sign-in failed. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = () => {
+    setError('');
+    try {
+      if (window.google?.accounts?.id) {
+        window.google.accounts.id.prompt((notification) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            setShowEmailInput(true);
+          }
+        });
+      } else {
+        setShowEmailInput(true);
+      }
+    } catch (e) {
+      setShowEmailInput(true);
     }
   };
 
@@ -177,6 +227,27 @@ export const Login = () => {
                   </svg>
                   <span>{loading ? 'Connecting Google…' : 'Sign in with Google'}</span>
                 </button>
+
+                {showEmailInput && (
+                  <form onSubmit={(e) => { e.preventDefault(); handleGoogleCredential(null, email); }} className="pt-2 space-y-3">
+                    <label className={labelClass}>Google / Student Email</label>
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="student@gmail.com"
+                      className={inputClass}
+                    />
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="btn-gold w-full py-3 text-xs font-bold"
+                    >
+                      {loading ? 'Signing in…' : 'Continue with Google Account'}
+                    </button>
+                  </form>
+                )}
 
                 <div className="pt-2 text-center">
                   <button

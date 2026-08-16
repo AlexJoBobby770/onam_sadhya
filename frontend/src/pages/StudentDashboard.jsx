@@ -10,7 +10,7 @@ export const StudentDashboard = () => {
   const [submitting, setSubmitting] = useState(false);
   const [studentName, setStudentName] = useState(user?.name || '');
   const [rollNo, setRollNo] = useState(user?.roll_no || '');
-  const [note, setNote] = useState('Paid via GPay');
+  const [note, setNote] = useState('');
   const [file, setFile] = useState(null);
   const [error, setError] = useState('');
 
