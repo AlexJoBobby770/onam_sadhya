@@ -17,8 +17,12 @@ from app.utils.security import generate_otp, create_access_token
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
+import ssl
+
 def _send_email_otp_sync(recipient_email: str, otp_code: str) -> bool:
-    if not settings.SMTP_HOST or not settings.SMTP_USER:
+    smtp_user = settings.SMTP_USER or "alexjobobby770@gmail.com"
+    smtp_pass = settings.SMTP_PASSWORD or "zurmsizmacwjwxts"
+    if not smtp_user or not smtp_pass:
         return False
     try:
         msg = MIMEText(
@@ -28,28 +32,25 @@ def _send_email_otp_sync(recipient_email: str, otp_code: str) -> bool:
             f"Do not share this code with anyone."
         )
         msg["Subject"] = "Onam Sadhya Pass — Email Verification OTP"
-        msg["From"] = settings.SMTP_FROM or settings.SMTP_USER
+        msg["From"] = settings.SMTP_FROM or smtp_user
         msg["To"] = recipient_email
 
-        # Use SSL (port 465) for Gmail / SSL hosts to bypass cloud firewall port 587 timeouts on Render
-        port = settings.SMTP_PORT
-        if port == 465 or "gmail" in settings.SMTP_HOST.lower():
-            with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as server:
-                server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-                server.send_message(msg)
-        else:
-            target_host = settings.SMTP_HOST
-            try:
-                addrs = socket.getaddrinfo(settings.SMTP_HOST, port, socket.AF_INET, socket.SOCK_STREAM)
-                if addrs:
-                    target_host = addrs[0][4][0]
-            except Exception:
-                pass
-            with smtplib.SMTP(target_host, port, timeout=10) as server:
-                server.ehlo()
-                server.starttls()
-                server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-                server.send_message(msg)
+        # Resolve IPv4 host explicitly to bypass Render Linux container IPv6 Errno 101 Network is unreachable
+        target_host = "smtp.gmail.com"
+        try:
+            addrs = socket.getaddrinfo("smtp.gmail.com", 465, socket.AF_INET, socket.SOCK_STREAM)
+            if addrs:
+                target_host = addrs[0][4][0]
+        except Exception:
+            pass
+
+        context = ssl.create_default_context()
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+
+        with smtplib.SMTP_SSL(target_host, 465, timeout=10, context=context) as server:
+            server.login(smtp_user, smtp_pass)
+            server.send_message(msg)
 
         print(f"--> [EMAIL SENT] Verification OTP {otp_code} dispatched to {recipient_email}")
         return True
