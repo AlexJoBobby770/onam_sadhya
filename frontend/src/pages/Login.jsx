@@ -95,11 +95,13 @@ export const Login = () => {
     document.body.appendChild(script);
   };
 
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+
   const initGoogleGSI = () => {
     try {
-      if (window.google?.accounts?.id) {
+      if (window.google?.accounts?.id && googleClientId) {
         window.google.accounts.id.initialize({
-          client_id: '1098654897854-onamsadhya2026.apps.googleusercontent.com',
+          client_id: googleClientId,
           callback: (response) => {
             if (response?.credential) {
               handleGoogleCredential(response.credential);
@@ -132,17 +134,17 @@ export const Login = () => {
 
   const handleGoogleSignIn = () => {
     setError('');
-    try {
-      if (window.google?.accounts?.id) {
+    if (googleClientId && window.google?.accounts?.id) {
+      try {
         window.google.accounts.id.prompt((notification) => {
           if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
             setShowEmailInput(true);
           }
         });
-      } else {
+      } catch (e) {
         setShowEmailInput(true);
       }
-    } catch (e) {
+    } else {
       setShowEmailInput(true);
     }
   };
