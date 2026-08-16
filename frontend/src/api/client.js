@@ -10,9 +10,13 @@ const api = axios.create({
 // Intercept requests to attach Authorization header if token exists
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('onam_auth_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    try {
+      const token = localStorage.getItem('onam_auth_token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (e) {
+      // Ignore storage access error in private browsing
     }
     return config;
   },
@@ -24,8 +28,10 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      localStorage.removeItem('onam_auth_token');
-      localStorage.removeItem('onam_user_data');
+      try {
+        localStorage.removeItem('onam_auth_token');
+        localStorage.removeItem('onam_user_data');
+      } catch (e) {}
     }
     return Promise.reject(error);
   }

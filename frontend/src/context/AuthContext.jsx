@@ -4,11 +4,23 @@ import api from '../api/client';
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+  const safeStorage = {
+    getItem: (key) => {
+      try { return localStorage.getItem(key); } catch (e) { return null; }
+    },
+    setItem: (key, val) => {
+      try { localStorage.setItem(key, val); } catch (e) {}
+    },
+    removeItem: (key) => {
+      try { localStorage.removeItem(key); } catch (e) {}
+    }
+  };
+
   const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem('onam_user_data');
+    const savedUser = safeStorage.getItem('onam_user_data');
     return savedUser ? JSON.parse(savedUser) : null;
   });
-  const [token, setToken] = useState(() => localStorage.getItem('onam_auth_token') || null);
+  const [token, setToken] = useState(() => safeStorage.getItem('onam_auth_token') || null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -22,7 +34,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       const res = await api.get('/me');
       setUser(res.data);
-      localStorage.setItem('onam_user_data', JSON.stringify(res.data));
+      safeStorage.setItem('onam_user_data', JSON.stringify(res.data));
     } catch (err) {
       console.error('Failed to fetch user:', err);
       logout();
@@ -34,8 +46,8 @@ export const AuthProvider = ({ children }) => {
   const loginWithToken = (access_token, user_data) => {
     setToken(access_token);
     setUser(user_data);
-    localStorage.setItem('onam_auth_token', access_token);
-    localStorage.setItem('onam_user_data', JSON.stringify(user_data));
+    safeStorage.setItem('onam_auth_token', access_token);
+    safeStorage.setItem('onam_user_data', JSON.stringify(user_data));
   };
 
   const devLogin = async (phone, name, role, roll_no = '') => {
@@ -59,8 +71,8 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setToken(null);
     setUser(null);
-    localStorage.removeItem('onam_auth_token');
-    localStorage.removeItem('onam_user_data');
+    safeStorage.removeItem('onam_auth_token');
+    safeStorage.removeItem('onam_user_data');
   };
 
   const isStudent = user?.role === 'student';
