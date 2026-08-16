@@ -31,20 +31,26 @@ def _send_email_otp_sync(recipient_email: str, otp_code: str) -> bool:
         msg["From"] = settings.SMTP_FROM or settings.SMTP_USER
         msg["To"] = recipient_email
 
-        # Resolve IPv4 host explicitly for Linux/Render containers to avoid IPv6 Errno 101 Network is unreachable
-        target_host = settings.SMTP_HOST
-        try:
-            addrs = socket.getaddrinfo(settings.SMTP_HOST, settings.SMTP_PORT, socket.AF_INET, socket.SOCK_STREAM)
-            if addrs:
-                target_host = addrs[0][4][0]
-        except Exception:
-            pass
+        # Use SSL (port 465) for Gmail / SSL hosts to bypass cloud firewall port 587 timeouts on Render
+        port = settings.SMTP_PORT
+        if port == 465 or "gmail" in settings.SMTP_HOST.lower():
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as server:
+                server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                server.send_message(msg)
+        else:
+            target_host = settings.SMTP_HOST
+            try:
+                addrs = socket.getaddrinfo(settings.SMTP_HOST, port, socket.AF_INET, socket.SOCK_STREAM)
+                if addrs:
+                    target_host = addrs[0][4][0]
+            except Exception:
+                pass
+            with smtplib.SMTP(target_host, port, timeout=10) as server:
+                server.ehlo()
+                server.starttls()
+                server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                server.send_message(msg)
 
-        with smtplib.SMTP(target_host, settings.SMTP_PORT, timeout=10) as server:
-            server.ehlo()
-            server.starttls()
-            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-            server.send_message(msg)
         print(f"--> [EMAIL SENT] Verification OTP {otp_code} dispatched to {recipient_email}")
         return True
     except Exception as e:
