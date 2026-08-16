@@ -2,7 +2,7 @@ import asyncio
 import smtplib
 from email.mime.text import MIMEText
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -35,7 +35,7 @@ def _send_email_otp_sync(recipient_email: str, otp_code: str) -> bool:
             server.starttls()
             server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
             server.send_message(msg)
-        print(f"--> [EMAIL SENT] OTP dispatched to {recipient_email}")
+        print(f"--> [EMAIL SENT] Verification OTP {otp_code} dispatched to {recipient_email}")
         return True
     except Exception as e:
         print(f"--> [EMAIL ERROR] Failed to dispatch OTP to {recipient_email}: {e}")
@@ -46,7 +46,7 @@ import re
 EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 @router.post("/send-otp", response_model=SendOTPResponse)
-async def send_otp(payload: SendOTPRequest, db: AsyncSession = Depends(get_db)):
+async def send_otp(payload: SendOTPRequest, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
     email_or_phone = payload.phone.strip().lower()
     
     # Syntactic Email Validation (reject malformed email addresses)
@@ -83,14 +83,9 @@ async def send_otp(payload: SendOTPRequest, db: AsyncSession = Depends(get_db)):
     db.add(otp_req)
     await db.commit()
 
-    # Dispatch email OTP; only raise on a real send failure, not on SMTP being unconfigured (dev mode)
+    # Dispatch email OTP asynchronously in background task so API responds instantly
     if "@" in email_or_phone and settings.SMTP_HOST:
-        sent = await asyncio.to_thread(_send_email_otp_sync, email_or_phone, otp_code)
-        if not sent:
-            raise HTTPException(
-                status_code=502,
-                detail="Could not send the verification email right now. Please try again shortly."
-            )
+        background_tasks.add_task(_send_email_otp_sync, email_or_phone, otp_code)
 
     return SendOTPResponse(
         message="Verification OTP sent successfully",
