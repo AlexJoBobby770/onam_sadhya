@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/client';
-import { Mail, KeyRound, ArrowRight, AlertCircle, Ticket, User, Hash } from 'lucide-react';
+import { Pookalam } from '../components/Pookalam';
+import { ArrowRight, AlertCircle } from 'lucide-react';
 
 export const Login = () => {
   const { loginWithToken, devLogin } = useAuth();
@@ -83,175 +84,162 @@ export const Login = () => {
     }
   };
 
+  const inputClass =
+    'w-full bg-onam-black border border-onam-line rounded-xl px-4 py-3 text-onam-kasavu text-sm ' +
+    'placeholder-onam-muted-faint focus:outline-none focus:border-onam-gold-deep transition';
+  const labelClass = 'block text-[10.5px] font-bold uppercase tracking-[0.1em] text-onam-muted mb-1.5';
+
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center px-4 py-12 bg-slate-950">
-      
-      {/* Main Container Card */}
-      <div className="w-full max-w-md bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-xl">
-        
-        {/* Title */}
-        <div className="text-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-emerald-600/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-3">
-            <Ticket className="w-6 h-6" />
-          </div>
-          <h2 className="text-2xl font-bold text-white tracking-tight">
-            Onam Sadhya Ticketing
-          </h2>
-          <p className="text-xs text-slate-400 mt-1">Official Student Gate Entry Portal</p>
-        </div>
+    <div className="min-h-screen flex items-center justify-center px-4 py-10 bg-onam-black">
+      <div className="w-full max-w-md">
 
-        {error && (
-          <div className="mb-6 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
+        <div className="relative overflow-hidden rounded-3xl bg-onam-deep border border-onam-line shadow-2xl">
+          <Pookalam className="absolute left-1/2 -translate-x-1/2 -top-[252px] w-[340px] h-[340px] opacity-[0.22] pointer-events-none" />
+          <div
+            className="absolute left-1/2 -translate-x-1/2 -top-[120px] w-[400px] h-[230px] pointer-events-none"
+            style={{ background: 'radial-gradient(ellipse at center, rgba(255,140,0,0.10), transparent 70%)' }}
+          />
 
-        {/* STEP 1: Registration Form */}
-        {step === 'email' && (
-          <form onSubmit={handleSendOTP} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Full Name</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                  <User className="w-4 h-4" />
+          <div className="relative px-7 pt-16 pb-7">
+
+            <div className="text-center">
+              <span className="block font-malayalam text-[13px] text-onam-gold mb-1.5">ഓണം 2026</span>
+              <h2 className="font-serif text-[29px] font-semibold leading-tight text-onam-kasavu tracking-tight">
+                Onam Sadhya
+              </h2>
+              <p className="text-xs text-onam-muted mt-1.5">Gate pass registration</p>
+            </div>
+
+            <div className="rule-gold my-6" />
+
+            {error && (
+              <div className="mb-5 p-3.5 rounded-xl bg-onam-red/10 border border-onam-red/30 text-red-300 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            {step === 'email' && (
+              <form onSubmit={handleSendOTP}>
+                {/* name + roll share a row so the submit button stays above the fold on small phones */}
+                <div className="grid grid-cols-[1.35fr_1fr] gap-2.5">
+                  <div>
+                    <label className={labelClass}>Full name</label>
+                    <input
+                      type="text"
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Your name"
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Roll no</label>
+                    <input
+                      type="text"
+                      required
+                      value={rollNo}
+                      onChange={(e) => setRollNo(e.target.value)}
+                      placeholder="CS2026"
+                      className={`${inputClass} font-mono uppercase`}
+                    />
+                  </div>
                 </div>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Rahul Nair"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 transition"
-                />
+
+                <div className="mt-3.5">
+                  <label className={labelClass}>Email address</label>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="student@gmail.com"
+                    className={`${inputClass} font-mono`}
+                  />
+                  <p className="text-[11px] text-onam-muted-dim mt-2 leading-relaxed">
+                    We'll send a 6-digit code here. Any personal email works.
+                  </p>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn-gold w-full mt-5 py-[15px] px-4 text-sm flex items-center justify-center gap-2"
+                >
+                  <span>{loading ? 'Sending code…' : 'Send verification code'}</span>
+                  {!loading && <ArrowRight className="w-4 h-4" />}
+                </button>
+              </form>
+            )}
+
+            {step === 'otp' && (
+              <form onSubmit={handleVerifyOTP}>
+                <div className="p-3.5 rounded-xl bg-onam-black border border-onam-line text-xs text-onam-muted text-center">
+                  Code sent to <span className="font-mono text-onam-gold">{email}</span>
+                  {devOtpHint && (
+                    <div className="mt-1.5 font-mono text-onam-muted-dim">
+                      Dev code: <strong className="text-onam-gold">{devOtpHint}</strong>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-4">
+                  <label className={labelClass}>Enter 6-digit code</label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={6}
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    placeholder="123456"
+                    className={`${inputClass} font-mono text-center text-2xl tracking-[0.35em] text-onam-gold py-3.5`}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn-gold w-full mt-5 py-[15px] px-4 text-sm"
+                >
+                  {loading ? 'Verifying…' : 'Verify & continue'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setStep('email')}
+                  className="w-full text-xs text-onam-muted-dim hover:text-onam-kasavu transition text-center pt-4"
+                >
+                  Change email address
+                </button>
+              </form>
+            )}
+
+            {/* Dev shortcuts — secondary by design, only works while backend DEV_MODE is on */}
+            <div className="mt-8">
+              <p className="font-mono text-[9.5px] tracking-[0.16em] uppercase text-onam-muted-faint text-center mb-2.5">
+                Dev quick login
+              </p>
+              <div className="grid grid-cols-3 rounded-xl overflow-hidden border border-onam-line bg-onam-black">
+                {[
+                  { role: 'student', label: 'Student' },
+                  { role: 'admin', label: 'Admin' },
+                  { role: 'super_admin', label: 'Super' },
+                ].map((item, i) => (
+                  <button
+                    key={item.role}
+                    type="button"
+                    onClick={() => handleQuickDevLogin(item.role)}
+                    className={`py-2.5 px-1.5 text-[11.5px] font-medium text-onam-muted hover:bg-onam-raised hover:text-onam-kasavu transition ${
+                      i < 2 ? 'border-r border-onam-line' : ''
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Roll Number</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                  <Hash className="w-4 h-4" />
-                </div>
-                <input
-                  type="text"
-                  required
-                  value={rollNo}
-                  onChange={(e) => setRollNo(e.target.value)}
-                  placeholder="CS2026"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 transition font-mono uppercase"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Email Address</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                  <Mail className="w-4 h-4" />
-                </div>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="student@gmail.com"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 transition font-mono"
-                />
-              </div>
-              <p className="text-[10px] text-slate-500 mt-1">Enter your email address to receive single-use verification OTP</p>
-            </div>
-
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
-            >
-              <span>{loading ? 'Sending Email OTP...' : 'Send Verification OTP'}</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </form>
-        )}
-
-        {/* STEP 2: OTP Input */}
-        {step === 'otp' && (
-          <form onSubmit={handleVerifyOTP} className="space-y-4">
-            <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 text-center">
-              Verification OTP sent to <span className="font-mono text-emerald-400 font-bold">{email}</span>
-              {devOtpHint && (
-                <div className="mt-1 font-mono text-xs text-slate-400">
-                  OTP Code: <strong className="text-emerald-400">{devOtpHint}</strong>
-                </div>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Enter 6-Digit OTP</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                  <KeyRound className="w-4 h-4" />
-                </div>
-                <input
-                  type="text"
-                  required
-                  maxLength={6}
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  placeholder="123456"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-emerald-400 placeholder-slate-600 text-lg tracking-widest font-mono text-center focus:outline-none focus:border-emerald-500 transition"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              <span>{loading ? 'Verifying...' : 'Verify OTP & Continue'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setStep('email')}
-              className="w-full text-xs text-slate-400 hover:text-slate-200 transition text-center pt-2"
-            >
-              Change Email Address
-            </button>
-          </form>
-        )}
-
-        {/* Quick Dev Login - only reachable when backend DEV_MODE=true */}
-        <div className="mt-8 pt-6 border-t border-slate-800">
-          <p className="text-[11px] font-semibold text-slate-400 text-center mb-3">
-            Quick Dev Login Switcher
-          </p>
-
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              onClick={() => handleQuickDevLogin('student')}
-              className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition"
-            >
-              <p className="text-xs font-bold text-white">Student</p>
-              <p className="text-[10px] text-slate-500">View Pass</p>
-            </button>
-
-            <button
-              onClick={() => handleQuickDevLogin('admin')}
-              className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition"
-            >
-              <p className="text-xs font-bold text-white">Admin</p>
-              <p className="text-[10px] text-slate-500">Approvals</p>
-            </button>
-
-            <button
-              onClick={() => handleQuickDevLogin('super_admin')}
-              className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition"
-            >
-              <p className="text-xs font-bold text-white">Super Admin</p>
-              <p className="text-[10px] text-slate-500">Analytics</p>
-            </button>
           </div>
         </div>
 
