@@ -28,6 +28,13 @@ export default {
           ink: '#16120A',
           'ink-soft': '#5C5443',
 
+          // cream surface — the student-facing light theme
+          cream: '#FBF6E9',
+          'cream-deep': '#F3EAD4',
+          'cream-line': '#E0D2AE',
+          maroon: '#7A1F1F',
+          'leaf-deep': '#2F6B18',
+
           // muted text on the dark shell
           muted: '#8DA294',
           'muted-dim': '#6C8073',

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { Upload, XCircle, Clock, Download, AlertCircle, Ticket } from 'lucide-react';
+import { Thoran } from '../components/Pookalam';
 
 export const StudentDashboard = () => {
   const { user } = useAuth();
@@ -115,41 +116,85 @@ export const StudentDashboard = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-onam-gold"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-onam-leaf-deep"></div>
       </div>
     );
   }
 
+  const steps = [
+    { n: '1', title: 'Pay ₹250 by UPI', body: 'Send it to any committee member and screenshot the receipt.' },
+    { n: '2', title: 'Upload the receipt', body: 'One committee member checks it by eye — usually within a day.' },
+    { n: '3', title: 'Show the QR at the gate', body: 'Single use. Save it to your phone before you come.' },
+  ];
+
   return (
-    <div className="max-w-md mx-auto px-4 py-8">
+    <div className="mx-auto max-w-6xl px-4 py-8 lg:px-8 lg:py-12">
+
+      <div className="mb-8 text-center lg:mb-10">
+        <span className="font-malayalam text-[13px] text-onam-maroon">ഓണം 2026</span>
+        <h2 className="mt-1 font-serif text-3xl font-semibold tracking-tight text-onam-ink lg:text-4xl">
+          Onam Sadhya
+        </h2>
+        <p className="mt-1.5 text-sm text-onam-ink-soft">21 August 2026 · College Hall</p>
+        <Thoran className="mx-auto mt-4 h-12 w-72 opacity-90" />
+      </div>
+
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)_minmax(0,1fr)]">
+
+        {/* Side panel — event facts. Sits under the main card on phones. */}
+        <aside className="order-2 lg:order-1 card-cream p-6">
+          <h3 className="font-serif text-lg font-semibold text-onam-ink">The Sadhya</h3>
+          <div className="rule-gold my-4" />
+          <dl className="space-y-3.5 text-sm">
+            {[
+              ['Date', '21 August 2026'],
+              ['Serving', '12:30 pm onwards'],
+              ['Venue', 'College Hall'],
+              ['Contribution', '₹250 per plate'],
+            ].map(([k, v]) => (
+              <div key={k} className="flex items-baseline justify-between gap-3">
+                <dt className="text-[11px] font-bold uppercase tracking-[0.1em] text-onam-ink-soft">{k}</dt>
+                <dd className="text-right font-medium text-onam-ink">{v}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="mt-5 rounded-xl bg-onam-cream-deep px-3.5 py-3 text-[11.5px] leading-relaxed text-onam-ink-soft">
+            Seats are limited to the hall's capacity. Passes are issued in the order payments
+            are verified.
+          </p>
+        </aside>
+
+        {/* Main column */}
+        <div className="order-1 lg:order-2">
 
       {/* CASE 1: NO TICKET YET OR REJECTED -> SUBMISSION FORM */}
       {(!ticket || ticket.status === 'rejected') && (
-        <div className="bg-onam-deep border border-onam-line rounded-2xl overflow-hidden">
+        <div className="card-cream overflow-hidden">
+          <div className="kasavu-band" />
           <div className="p-6 space-y-5">
 
             {ticket?.status === 'rejected' && (
-              <div className="p-4 rounded-xl bg-onam-red/10 border border-onam-red/30 flex items-start gap-3">
-                <XCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+              <div className="p-4 rounded-xl bg-onam-red/5 border border-onam-red/25 flex items-start gap-3">
+                <XCircle className="w-5 h-5 text-onam-maroon shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-bold text-red-300 text-sm">Previous request rejected</p>
-                  <p className="text-xs text-red-300/80 mt-0.5">
+                  <p className="font-bold text-onam-maroon text-sm">Previous request rejected</p>
+                  <p className="text-xs text-onam-maroon/80 mt-0.5">
                     {ticket.rejection_reason || 'Invalid payment details'}
                   </p>
-                  <p className="text-xs text-onam-muted mt-2">Submit updated proof below.</p>
+                  <p className="text-xs text-onam-ink-soft mt-2">Submit updated proof below.</p>
                 </div>
               </div>
             )}
 
             <div>
-              <h3 className="font-serif text-xl font-semibold text-onam-kasavu">Request your pass</h3>
-              <p className="text-xs text-onam-muted mt-1.5 leading-relaxed">
+              <h3 className="font-serif text-2xl font-semibold text-onam-ink">Request your pass</h3>
+              <p className="text-[13px] text-onam-ink-soft mt-1.5 leading-relaxed">
                 Pay ₹250 by UPI to a committee member, then upload the receipt here for verification.
               </p>
             </div>
 
             {error && (
-              <div className="p-3 rounded-xl bg-onam-red/10 border border-onam-red/30 text-red-300 text-xs flex items-center gap-2">
+              <div className="p-3 rounded-xl bg-onam-red/5 border border-onam-red/25 text-onam-maroon text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{error}</span>
               </div>
@@ -158,7 +203,7 @@ export const StudentDashboard = () => {
             <form onSubmit={handleSubmitProof} className="space-y-4">
               <div className="grid grid-cols-[1.35fr_1fr] gap-2.5">
                 <div>
-                  <label className="block text-[10.5px] font-bold uppercase tracking-[0.1em] text-onam-muted mb-1.5">
+                  <label className="label-cream">
                     Full Name
                   </label>
                   <input
@@ -167,11 +212,11 @@ export const StudentDashboard = () => {
                     value={studentName}
                     onChange={(e) => setStudentName(e.target.value)}
                     placeholder="Rahul Nair"
-                    className="w-full bg-onam-black border border-onam-line rounded-xl px-4 py-3 text-onam-kasavu text-sm placeholder-onam-muted-faint focus:outline-none focus:border-onam-gold-deep transition"
+                    className="input-cream"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10.5px] font-bold uppercase tracking-[0.1em] text-onam-muted mb-1.5">
+                  <label className="label-cream">
                     Class / Roll No
                   </label>
                   <input
@@ -180,13 +225,13 @@ export const StudentDashboard = () => {
                     value={rollNo}
                     onChange={(e) => setRollNo(e.target.value)}
                     placeholder="CS2026 / 12-A"
-                    className="w-full bg-onam-black border border-onam-line rounded-xl px-4 py-3 text-onam-kasavu text-sm font-mono uppercase placeholder-onam-muted-faint focus:outline-none focus:border-onam-gold-deep transition"
+                    className="input-cream font-mono uppercase"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10.5px] font-bold uppercase tracking-[0.1em] text-onam-muted mb-1.5">
+                <label className="label-cream">
                   Payment Reference
                 </label>
                 <input
@@ -194,26 +239,26 @@ export const StudentDashboard = () => {
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   placeholder="e.g. GPay to Arjun, 8pm"
-                  className="w-full bg-onam-black border border-onam-line rounded-xl px-4 py-3 text-onam-kasavu text-sm placeholder-onam-muted-faint focus:outline-none focus:border-onam-gold-deep transition"
+                  className="input-cream"
                 />
               </div>
 
               <div>
-                <label className="block text-[10.5px] font-bold uppercase tracking-[0.1em] text-onam-muted mb-1.5">
+                <label className="label-cream">
                   Receipt screenshot
                 </label>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={(e) => setFile(e.target.files[0])}
-                  className="w-full bg-onam-black border border-onam-line rounded-xl px-4 py-2.5 text-onam-muted text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-onam-gold file:text-onam-ink cursor-pointer"
+                  className="input-cream cursor-pointer py-2.5 text-xs text-onam-ink-soft file:mr-3 file:rounded-lg file:border-0 file:bg-onam-leaf-deep file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-onam-kasavu"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={submitting}
-                className="btn-gold w-full py-3.5 px-4 text-sm flex items-center justify-center gap-2"
+                className="btn-leaf w-full py-4 px-4 text-[15px] flex items-center justify-center gap-2"
               >
                 <Ticket className="w-4 h-4" />
                 <span>{submitting ? 'Submitting…' : 'Request pass'}</span>
@@ -225,18 +270,19 @@ export const StudentDashboard = () => {
 
       {/* CASE 2: PENDING */}
       {ticket && ticket.status === 'pending' && (
-        <div className="bg-onam-deep border border-onam-line rounded-2xl overflow-hidden text-center">
+        <div className="card-cream overflow-hidden text-center">
+          <div className="kasavu-band" />
           <div className="p-8 space-y-4">
-            <div className="w-12 h-12 rounded-full bg-onam-orange/10 border border-onam-orange/30 flex items-center justify-center mx-auto text-onam-orange">
-              <Clock className="w-6 h-6" />
+            <div className="w-14 h-14 rounded-full bg-onam-orange/15 border border-onam-orange/40 flex items-center justify-center mx-auto text-onam-orange">
+              <Clock className="w-7 h-7" />
             </div>
             <div>
-              <h3 className="font-serif text-xl font-semibold text-onam-kasavu">Under review</h3>
-              <p className="text-xs text-onam-muted mt-2 leading-relaxed max-w-xs mx-auto">
+              <h3 className="font-serif text-2xl font-semibold text-onam-ink">Under review</h3>
+              <p className="text-[13px] text-onam-ink-soft mt-2 leading-relaxed max-w-xs mx-auto">
                 A committee member is checking your payment. Your pass appears here once approved.
               </p>
             </div>
-            <div className="inline-block px-3 py-1 rounded-lg bg-onam-black border border-onam-line text-[11px] text-onam-orange font-mono">
+            <div className="inline-block px-3.5 py-1.5 rounded-lg bg-onam-cream-deep border border-onam-cream-line text-[11px] text-onam-ink-soft font-mono">
               Pending approval
             </div>
           </div>
@@ -247,16 +293,17 @@ export const StudentDashboard = () => {
       {ticket && ticket.status === 'approved' && (
         <div>
           <div className="text-center mb-5">
-            <h3 className="font-serif text-xl font-semibold text-onam-kasavu">
+            <h3 className="font-serif text-2xl font-semibold text-onam-ink">
               {ticket.used ? 'Pass already used' : 'Your pass is ready'}
             </h3>
-            <p className="text-xs text-onam-muted mt-1">
+            <p className="text-[13px] text-onam-ink-soft mt-1">
               {ticket.used ? 'This pass has been scanned at the gate' : 'Show this at the hall entrance'}
             </p>
           </div>
 
-          {/* Cream kasavu pass — deliberately inverted against the dark app shell */}
-          <div className={`relative bg-onam-kasavu rounded-2xl overflow-hidden shadow-2xl ${ticket.used ? 'opacity-60' : ''}`}>
+          {/* Banana-leaf panel behind the pass — cream on cream would vanish */}
+          <div className="rounded-[26px] bg-gradient-to-b from-onam-leaf-deep to-[#1F4A0F] p-3 shadow-[0_26px_60px_-30px_rgba(31,74,15,0.9)]">
+          <div className={`relative bg-onam-kasavu rounded-2xl overflow-hidden ${ticket.used ? 'opacity-60' : ''}`}>
             <div className="kasavu-band" />
 
             <div className="px-5 pt-4 text-center">
@@ -290,8 +337,8 @@ export const StudentDashboard = () => {
 
             {/* perforation — notches punch through to the page background */}
             <div className="relative h-6">
-              <div className="absolute top-1/2 -translate-y-1/2 -left-2.5 w-5 h-5 rounded-full bg-onam-black" />
-              <div className="absolute top-1/2 -translate-y-1/2 -right-2.5 w-5 h-5 rounded-full bg-onam-black" />
+              <div className="absolute top-1/2 -translate-y-1/2 -left-2.5 w-5 h-5 rounded-full bg-onam-leaf-deep" />
+              <div className="absolute top-1/2 -translate-y-1/2 -right-2.5 w-5 h-5 rounded-full bg-onam-leaf-deep" />
               <div className="absolute top-1/2 left-4 right-4 border-t-[1.5px] border-dashed border-onam-kasavu-dim" />
             </div>
 
@@ -314,22 +361,45 @@ export const StudentDashboard = () => {
 
             <div className="kasavu-band" />
           </div>
+          </div>
 
           <button
             onClick={handleDownloadQR}
-            className="btn-gold w-full mt-4 py-3.5 px-4 text-sm flex items-center justify-center gap-2"
+            className="btn-leaf w-full mt-4 py-4 px-4 text-[15px] flex items-center justify-center gap-2"
           >
             <Download className="w-4 h-4" />
             Save pass
           </button>
 
-          <div className="mt-4 rounded-xl bg-onam-deep border border-onam-line border-l-2 border-l-onam-orange px-3.5 py-3 text-[11.5px] leading-relaxed text-onam-muted">
-            <b className="text-onam-kasavu font-medium">Save it now.</b> The hall may have patchy
+          <div className="mt-4 rounded-xl bg-onam-cream-deep border border-onam-cream-line border-l-[3px] border-l-onam-orange px-3.5 py-3 text-[11.5px] leading-relaxed text-onam-ink-soft">
+            <b className="font-bold text-onam-ink">Save it now.</b> The hall may have patchy
             signal, and a saved pass still scans.
           </div>
         </div>
       )}
 
+        </div>
+
+        {/* Side panel — how it works. */}
+        <aside className="order-3 card-cream p-6">
+          <h3 className="font-serif text-lg font-semibold text-onam-ink">How it works</h3>
+          <div className="rule-gold my-4" />
+          <ol className="space-y-4">
+            {steps.map((s) => (
+              <li key={s.n} className="flex gap-3">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-onam-leaf-deep font-mono text-[12px] font-bold text-onam-kasavu">
+                  {s.n}
+                </span>
+                <div>
+                  <p className="text-[13.5px] font-bold text-onam-ink">{s.title}</p>
+                  <p className="mt-0.5 text-[12px] leading-relaxed text-onam-ink-soft">{s.body}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </aside>
+
+      </div>
     </div>
   );
 };

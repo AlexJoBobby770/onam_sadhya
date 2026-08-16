@@ -31,6 +31,62 @@
   }
   .btn-gold:hover { filter: brightness(1.05); }
   .btn-gold:disabled { opacity: 0.5; filter: none; }
+
+  /* ---- Cream (student-facing) surface ---- */
+
+  /* Festival page: warm cream washed with pookalam-coloured light from the corners,
+     plus kasavu gold stripes down the gutters so wide screens read as framed cloth. */
+  .surface-festival {
+    background-color: #FBF6E9;
+    background-image:
+      radial-gradient(ellipse 60% 45% at 12% 0%, rgba(255, 140, 0, 0.14), transparent 70%),
+      radial-gradient(ellipse 55% 40% at 88% 6%, rgba(179, 27, 27, 0.10), transparent 70%),
+      radial-gradient(ellipse 70% 40% at 50% 100%, rgba(102, 176, 50, 0.13), transparent 70%);
+  }
+
+  /* Gutter stripes only appear once there is gutter to fill. */
+  @media (min-width: 1024px) {
+    .surface-festival::before,
+    .surface-festival::after {
+      content: '';
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      width: 22px;
+      pointer-events: none;
+      background:
+        linear-gradient(#C9962B, #C9962B) 6px 0/1.5px 100% no-repeat,
+        linear-gradient(#C9962B, #C9962B) 14px 0/1.5px 100% no-repeat,
+        linear-gradient(180deg, rgba(255, 219, 73, 0.55), rgba(201, 150, 43, 0.35));
+    }
+    .surface-festival::before { left: 0; }
+    .surface-festival::after { right: 0; }
+  }
+
+  .card-cream {
+    @apply rounded-3xl border border-onam-cream-line bg-onam-cream;
+    box-shadow: 0 22px 50px -28px rgba(90, 60, 10, 0.45);
+  }
+
+  .input-cream {
+    @apply w-full rounded-xl border border-onam-cream-line bg-white/70 px-4 py-3 text-sm text-onam-ink
+           placeholder-onam-ink-soft/50 transition focus:outline-none focus:border-onam-gold-deep
+           focus:bg-white focus:ring-2 focus:ring-onam-gold/40;
+  }
+
+  .label-cream {
+    @apply mb-1.5 block text-[10.5px] font-bold uppercase tracking-[0.1em] text-onam-ink-soft;
+  }
+
+  /* Deep-green primary action: gold-on-cream has no contrast, so the button
+     carries the leaf colour and the gold moves to its rim. */
+  .btn-leaf {
+    @apply rounded-xl font-bold text-onam-kasavu transition;
+    background: linear-gradient(180deg, #3B8420 0%, #2A6014 100%);
+    box-shadow: 0 10px 22px -12px rgba(47, 107, 24, 0.85), inset 0 0 0 1.5px rgba(255, 219, 73, 0.55);
+  }
+  .btn-leaf:hover { filter: brightness(1.08); }
+  .btn-leaf:disabled { opacity: 0.55; filter: none; }
 }
 
 /* Custom Scrollbar */
