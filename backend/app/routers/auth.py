@@ -61,7 +61,42 @@ def _send_email_otp_sync(recipient_email: str, otp_code: str) -> bool:
         return False
 
 def _dispatch_email_otp(recipient_email: str, otp_code: str) -> bool:
-    # 1. Check if Resend HTTPS API Key is present (HTTPS Port 443 - 100% unblocked on Render)
+    # 1. Check if Brevo HTTPS API Key is present (100% free 300/day, HTTPS Port 443 - NO domain restriction, sends to ANY student email!)
+    brevo_key = os.getenv("BREVO_API_KEY", "").strip()
+    if brevo_key:
+        try:
+            sender_email = settings.SMTP_FROM or settings.SMTP_USER or "alexjobobby770@gmail.com"
+            resp = httpx.post(
+                "https://api.brevo.com/v3/smtp/email",
+                headers={
+                    "api-key": brevo_key,
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "sender": {"name": "Onam Sadhya Committee", "email": sender_email},
+                    "to": [{"email": recipient_email}],
+                    "subject": "Onam Sadhya Pass — Email Verification OTP",
+                    "htmlContent": (
+                        f"<div style='font-family:sans-serif;padding:20px;background:#090d16;color:#f3e8c8;border-radius:12px;'>"
+                        f"<h2 style='color:#f59e0b;'>Onam Sadhya Gate Pass Verification</h2>"
+                        f"<p>Greetings from Onam Sadhya Organising Committee!</p>"
+                        f"<p>Your single-use gate pass verification OTP code is: <strong style='font-size:24px;color:#10b981;'>{otp_code}</strong></p>"
+                        f"<p>This code will expire in {settings.OTP_EXPIRY_MINUTES} minutes.</p>"
+                        f"</div>"
+                    ),
+                    "textContent": f"Your single-use gate pass verification OTP code is: {otp_code}"
+                },
+                timeout=10.0
+            )
+            if resp.status_code in (200, 201):
+                print(f"--> [EMAIL SENT VIA BREVO HTTPS API] OTP dispatched to {recipient_email}")
+                return True
+            else:
+                print(f"--> [BREVO API ERROR] Status {resp.status_code}: {resp.text}")
+        except Exception as e:
+            print(f"--> [BREVO API EXCEPTION] {e}")
+
+    # 2. Check if Resend HTTPS API Key is present (HTTPS Port 443)
     resend_key = os.getenv("RESEND_API_KEY", "").strip()
     if resend_key:
         try:
@@ -93,32 +128,6 @@ def _dispatch_email_otp(recipient_email: str, otp_code: str) -> bool:
                 print(f"--> [RESEND API ERROR] Status {resp.status_code}: {resp.text}")
         except Exception as e:
             print(f"--> [RESEND API EXCEPTION] {e}")
-
-    # 2. Check if Brevo HTTPS API Key is present (HTTPS Port 443 - 100% unblocked on Render)
-    brevo_key = os.getenv("BREVO_API_KEY", "").strip()
-    if brevo_key:
-        try:
-            resp = httpx.post(
-                "https://api.brevo.com/v3/smtp/email",
-                headers={
-                    "api-key": brevo_key,
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "sender": {"name": "Onam Sadhya Committee", "email": settings.SMTP_FROM or "alexjobobby770@gmail.com"},
-                    "to": [{"email": recipient_email}],
-                    "subject": "Onam Sadhya Pass — Email Verification OTP",
-                    "textContent": f"Your single-use gate pass verification OTP code is: {otp_code}"
-                },
-                timeout=10.0
-            )
-            if resp.status_code in (200, 201):
-                print(f"--> [EMAIL SENT VIA BREVO HTTPS API] OTP dispatched to {recipient_email}")
-                return True
-            else:
-                print(f"--> [BREVO API ERROR] Status {resp.status_code}: {resp.text}")
-        except Exception as e:
-            print(f"--> [BREVO API EXCEPTION] {e}")
 
     # 3. Fallback to SMTP_SSL
     return _send_email_otp_sync(recipient_email, otp_code)
