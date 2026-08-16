@@ -25,6 +25,9 @@ export const AdminDashboard = ({ onOpenScanner }) => {
   useEffect(() => {
     setPage(1);
     setSelectedIds(new Set());
+  }, [statusFilter, searchQuery]);
+
+  useEffect(() => {
     fetchTickets();
   }, [statusFilter, searchQuery, page]);
 
