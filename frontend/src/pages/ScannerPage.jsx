@@ -112,36 +112,35 @@ export const ScannerPage = () => {
     if (loading) return;
     setLoading(true);
 
-    if (!navigator.onLine) {
-      // OFFLINE VALIDATION FALLBACK
-      handleOfflineScanValidation(qrToken);
-      setLoading(false);
-      return;
-    }
-
     try {
       const res = await api.post('/admin/scan', { qr_token: qrToken });
       setScanResult(res.data);
       fetchApprovedTicketsCache();
     } catch (err) {
-      setScanResult({
-        success: false,
-        message: err.response?.data?.detail || 'Failed to process QR code scan.',
-        status: 'INVALID_TOKEN'
-      });
+      if (!err.response) {
+        // Request never reached the server (offline, or connected to a network
+        // with no real internet) - fall back to the local cache instead of erroring out.
+        handleOfflineScanValidation(qrToken);
+      } else {
+        setScanResult({
+          success: false,
+          message: err.response?.data?.detail || 'Failed to process QR code scan.',
+          status: 'INVALID_TOKEN'
+        });
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleOfflineScanValidation = (qrToken) => {
+  const handleOfflineScanValidation = (lookupValue, lookupField = 'qr_token', queueType = 'token') => {
     const cached = JSON.parse(localStorage.getItem('onam_approved_tickets') || '[]');
-    const match = cached.find(t => t.qr_token === qrToken);
+    const match = cached.find(t => t[lookupField] === lookupValue);
 
     if (!match) {
       setScanResult({
         success: false,
-        message: 'OFFLINE REJECTION — Token not found in local approved tickets cache.',
+        message: 'OFFLINE REJECTION — Not found in local approved tickets cache.',
         status: 'INVALID_TOKEN'
       });
       return;
@@ -165,7 +164,7 @@ export const ScannerPage = () => {
     setApprovedList(cached);
 
     const queued = JSON.parse(localStorage.getItem('onam_queued_scans') || '[]');
-    queued.push({ type: 'token', payload: qrToken, timestamp: new Date().toISOString() });
+    queued.push({ type: queueType, payload: lookupValue, timestamp: new Date().toISOString() });
     localStorage.setItem('onam_queued_scans', JSON.stringify(queued));
     setQueuedScansCount(queued.length);
 
@@ -179,43 +178,23 @@ export const ScannerPage = () => {
     });
   };
 
-  const handleManualScanSubmit = async (ticketId, studentName) => {
+  const handleManualScanSubmit = async (ticketId) => {
     setLoading(true);
-
-    if (!navigator.onLine) {
-      // Offline manual mark as used
-      const cached = JSON.parse(localStorage.getItem('onam_approved_tickets') || '[]');
-      const match = cached.find(t => t.ticket_id === ticketId);
-      if (match) {
-        match.used = true;
-        localStorage.setItem('onam_approved_tickets', JSON.stringify(cached));
-        setApprovedList(cached);
-
-        const queued = JSON.parse(localStorage.getItem('onam_queued_scans') || '[]');
-        queued.push({ type: 'manual', payload: ticketId, timestamp: new Date().toISOString() });
-        localStorage.setItem('onam_queued_scans', JSON.stringify(queued));
-        setQueuedScansCount(queued.length);
-      }
-      setScanResult({
-        success: true,
-        message: `ENTRY GRANTED (OFFLINE MANUAL) — Welcome ${studentName}!`,
-        status: 'GRANTED',
-        student_name: studentName
-      });
-      setLoading(false);
-      return;
-    }
 
     try {
       const res = await api.post('/admin/scan-manual', { ticket_id: ticketId });
       setScanResult(res.data);
       fetchApprovedTicketsCache();
     } catch (err) {
-      setScanResult({
-        success: false,
-        message: err.response?.data?.detail || 'Manual entry failed.',
-        status: 'INVALID_TOKEN'
-      });
+      if (!err.response) {
+        handleOfflineScanValidation(ticketId, 'ticket_id', 'manual');
+      } else {
+        setScanResult({
+          success: false,
+          message: err.response?.data?.detail || 'Manual entry failed.',
+          status: 'INVALID_TOKEN'
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -401,7 +380,7 @@ export const ScannerPage = () => {
                     <p className="text-[11px] text-slate-400 font-mono">{t.user_phone} {t.user_roll_no ? `| Roll: ${t.user_roll_no}` : ''}</p>
                   </div>
                   <button
-                    onClick={() => handleManualScanSubmit(t.ticket_id, t.user_name)}
+                    onClick={() => handleManualScanSubmit(t.ticket_id)}
                     disabled={loading}
                     className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow transition disabled:opacity-50"
                   >
