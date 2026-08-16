@@ -11,7 +11,7 @@ from app.database import get_db
 from app.models import User, UserRole, OTPRequest
 from app.schemas import (
     SendOTPRequest, SendOTPResponse,
-    VerifyOTPRequest, DevLoginRequest, TokenResponse, UserResponse
+    VerifyOTPRequest, DevLoginRequest, GoogleLoginRequest, TokenResponse, UserResponse
 )
 from app.utils.security import generate_otp, create_access_token
 
@@ -61,42 +61,7 @@ def _send_email_otp_sync(recipient_email: str, otp_code: str) -> bool:
         return False
 
 def _dispatch_email_otp(recipient_email: str, otp_code: str) -> bool:
-    # 1. Check if Brevo HTTPS API Key is present (100% free 300/day, HTTPS Port 443 - NO domain restriction, sends to ANY student email!)
-    brevo_key = os.getenv("BREVO_API_KEY", "").strip()
-    if brevo_key:
-        try:
-            sender_email = settings.SMTP_FROM or settings.SMTP_USER or "alexjobobby770@gmail.com"
-            resp = httpx.post(
-                "https://api.brevo.com/v3/smtp/email",
-                headers={
-                    "api-key": brevo_key,
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "sender": {"name": "Onam Sadhya Committee", "email": sender_email},
-                    "to": [{"email": recipient_email}],
-                    "subject": "Onam Sadhya Pass — Email Verification OTP",
-                    "htmlContent": (
-                        f"<div style='font-family:sans-serif;padding:20px;background:#090d16;color:#f3e8c8;border-radius:12px;'>"
-                        f"<h2 style='color:#f59e0b;'>Onam Sadhya Gate Pass Verification</h2>"
-                        f"<p>Greetings from Onam Sadhya Organising Committee!</p>"
-                        f"<p>Your single-use gate pass verification OTP code is: <strong style='font-size:24px;color:#10b981;'>{otp_code}</strong></p>"
-                        f"<p>This code will expire in {settings.OTP_EXPIRY_MINUTES} minutes.</p>"
-                        f"</div>"
-                    ),
-                    "textContent": f"Your single-use gate pass verification OTP code is: {otp_code}"
-                },
-                timeout=10.0
-            )
-            if resp.status_code in (200, 201):
-                print(f"--> [EMAIL SENT VIA BREVO HTTPS API] OTP dispatched to {recipient_email}")
-                return True
-            else:
-                print(f"--> [BREVO API ERROR] Status {resp.status_code}: {resp.text}")
-        except Exception as e:
-            print(f"--> [BREVO API EXCEPTION] {e}")
-
-    # 2. Check if Resend HTTPS API Key is present (HTTPS Port 443)
+    # 1. Check if Resend HTTPS API Key is present (HTTPS Port 443 - 100% unblocked on Render)
     resend_key = os.getenv("RESEND_API_KEY", "").strip()
     if resend_key:
         try:
@@ -128,6 +93,32 @@ def _dispatch_email_otp(recipient_email: str, otp_code: str) -> bool:
                 print(f"--> [RESEND API ERROR] Status {resp.status_code}: {resp.text}")
         except Exception as e:
             print(f"--> [RESEND API EXCEPTION] {e}")
+
+    # 2. Check if Brevo HTTPS API Key is present (HTTPS Port 443 - 100% unblocked on Render)
+    brevo_key = os.getenv("BREVO_API_KEY", "").strip()
+    if brevo_key:
+        try:
+            resp = httpx.post(
+                "https://api.brevo.com/v3/smtp/email",
+                headers={
+                    "api-key": brevo_key,
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "sender": {"name": "Onam Sadhya Committee", "email": settings.SMTP_FROM or "alexjobobby770@gmail.com"},
+                    "to": [{"email": recipient_email}],
+                    "subject": "Onam Sadhya Pass — Email Verification OTP",
+                    "textContent": f"Your single-use gate pass verification OTP code is: {otp_code}"
+                },
+                timeout=10.0
+            )
+            if resp.status_code in (200, 201):
+                print(f"--> [EMAIL SENT VIA BREVO HTTPS API] OTP dispatched to {recipient_email}")
+                return True
+            else:
+                print(f"--> [BREVO API ERROR] Status {resp.status_code}: {resp.text}")
+        except Exception as e:
+            print(f"--> [BREVO API EXCEPTION] {e}")
 
     # 3. Fallback to SMTP_SSL
     return _send_email_otp_sync(recipient_email, otp_code)
@@ -274,6 +265,67 @@ async def dev_login(payload: DevLoginRequest, db: AsyncSession = Depends(get_db)
         user.role = payload.role
         if payload.roll_no:
             user.roll_no = payload.roll_no
+
+    await db.commit()
+    await db.refresh(user)
+
+    token = create_access_token(data={"sub": user.id, "role": user.role.value, "phone": user.phone})
+    return TokenResponse(
+        access_token=token,
+        token_type="bearer",
+        user=UserResponse.model_validate(user)
+    )
+
+@router.post("/google", response_model=TokenResponse)
+async def google_login(payload: GoogleLoginRequest, db: AsyncSession = Depends(get_db)):
+    email = None
+    name = payload.name or "Student"
+    
+    # Verify Google ID token via Google tokeninfo API if credential is provided
+    if payload.credential:
+        try:
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                resp = await client.get(f"https://oauth2.googleapis.com/tokeninfo?id_token={payload.credential}")
+                if resp.status_code == 200:
+                    data = resp.json()
+                    email = data.get("email", "").strip().lower()
+                    if data.get("name"):
+                        name = data.get("name")
+        except Exception as e:
+            print(f"--> [GOOGLE OAUTH VERIFY EXCEPTION] {e}")
+
+    # Fallback to direct email payload if provided
+    if not email and payload.email:
+        email = payload.email.strip().lower()
+
+    if not email:
+        raise HTTPException(
+            status_code=400,
+            detail="Could not verify Google account credentials. Please try again."
+        )
+
+    # Check if Super Admin / Admin email match
+    admin_email = os.getenv("ADMIN_EMAIL", "alexjobobby770@gmail.com").strip().lower()
+    is_super_admin = (email == admin_email)
+
+    # Find or create user
+    user_stmt = select(User).where(User.phone == email)
+    user_res = await db.execute(user_stmt)
+    user = user_res.scalar_one_or_none()
+
+    if not user:
+        user = User(
+            phone=email,
+            name=name,
+            roll_no=payload.roll_no or "G-2026",
+            role=UserRole.SUPER_ADMIN if is_super_admin else UserRole.STUDENT
+        )
+        db.add(user)
+        await db.flush()
+    else:
+        # Promote to SUPER_ADMIN if email matches admin_email
+        if is_super_admin and user.role != UserRole.SUPER_ADMIN:
+            user.role = UserRole.SUPER_ADMIN
 
     await db.commit()
     await db.refresh(user)

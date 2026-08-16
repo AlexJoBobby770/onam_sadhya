@@ -24,6 +24,12 @@ class DevLoginRequest(BaseModel):
     role: UserRole = UserRole.STUDENT
     roll_no: Optional[str] = None
 
+class GoogleLoginRequest(BaseModel):
+    credential: Optional[str] = None
+    email: Optional[str] = None
+    name: Optional[str] = None
+    roll_no: Optional[str] = None
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
