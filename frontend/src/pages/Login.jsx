@@ -4,7 +4,7 @@ import api from '../api/client';
 import { Mail, KeyRound, ArrowRight, AlertCircle, Ticket, User, Hash } from 'lucide-react';
 
 export const Login = () => {
-  const { loginWithToken } = useAuth();
+  const { loginWithToken, devLogin } = useAuth();
   const [step, setStep] = useState('email'); // 'email' | 'otp'
   const [name, setName] = useState('Rahul Nair');
   const [email, setEmail] = useState('rahul.nair@gmail.com');
@@ -40,6 +40,21 @@ export const Login = () => {
       setError(err.response?.data?.detail || 'Failed to send OTP. Please verify your email address.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleQuickDevLogin = async (role) => {
+    setError('');
+    try {
+      if (role === 'student') {
+        await devLogin('rahul.nair@gmail.com', 'Rahul Nair', 'student', 'CS2026');
+      } else if (role === 'admin') {
+        await devLogin('admin.volunteer@gmail.com', 'Ananya V (Volunteer Admin)', 'admin');
+      } else if (role === 'super_admin') {
+        await devLogin('superadmin@gmail.com', 'Dr. Radhakrishnan (Super Admin)', 'super_admin');
+      }
+    } catch (err) {
+      setError('Dev login failed');
     }
   };
 
@@ -206,6 +221,39 @@ export const Login = () => {
             </button>
           </form>
         )}
+
+        {/* Quick Dev Login - only reachable when backend DEV_MODE=true */}
+        <div className="mt-8 pt-6 border-t border-slate-800">
+          <p className="text-[11px] font-semibold text-slate-400 text-center mb-3">
+            Quick Dev Login Switcher
+          </p>
+
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              onClick={() => handleQuickDevLogin('student')}
+              className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition"
+            >
+              <p className="text-xs font-bold text-white">Student</p>
+              <p className="text-[10px] text-slate-500">View Pass</p>
+            </button>
+
+            <button
+              onClick={() => handleQuickDevLogin('admin')}
+              className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition"
+            >
+              <p className="text-xs font-bold text-white">Admin</p>
+              <p className="text-[10px] text-slate-500">Approvals</p>
+            </button>
+
+            <button
+              onClick={() => handleQuickDevLogin('super_admin')}
+              className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition"
+            >
+              <p className="text-xs font-bold text-white">Super Admin</p>
+              <p className="text-[10px] text-slate-500">Analytics</p>
+            </button>
+          </div>
+        </div>
 
       </div>
     </div>
