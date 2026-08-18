@@ -36,9 +36,12 @@ async def init_db():
         if not is_sqlite:
             from sqlalchemy import text
             try:
-                await conn.execute(text("ALTER TABLE users ALTER COLUMN email TYPE VARCHAR(255);"))
-            except Exception:
-                pass
+                await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255);"))
+                await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(255);"))
+                await conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_email ON users (email);"))
+                await conn.execute(text("ALTER TABLE users ALTER COLUMN phone DROP NOT NULL;"))
+            except Exception as e:
+                print(f"PostgreSQL DDL Migration note: {e}")
 
     # Seed Organiser Super Admin account explicitly if none exists
     async with AsyncSessionLocal() as session:
