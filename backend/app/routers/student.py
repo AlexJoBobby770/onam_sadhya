@@ -151,11 +151,13 @@ async def submit_ticket(
                     if res.status_code in (200, 201):
                         file_url = f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1/object/public/{settings.SUPABASE_BUCKET}/{filename}"
                     else:
+                        print(f"--> [SUPABASE STORAGE UPLOAD WARNING] Status {res.status_code}: {res.text}. Using local storage fallback.")
                         filepath = os.path.join(UPLOAD_DIR, filename)
                         with open(filepath, "wb") as f:
                             f.write(file_bytes)
                         file_url = f"/uploads/proofs/{filename}"
-            except Exception:
+            except Exception as e:
+                print(f"--> [SUPABASE STORAGE EXCEPTION] {e}. Using local storage fallback.")
                 filepath = os.path.join(UPLOAD_DIR, filename)
                 with open(filepath, "wb") as f:
                     f.write(file_bytes)

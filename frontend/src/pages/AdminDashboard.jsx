@@ -341,15 +341,32 @@ export const AdminDashboard = ({ onOpenScanner }) => {
               <h3 className="font-bold text-onam-kasavu text-sm">Receipt Image Preview</h3>
               <button onClick={() => setPreviewImage(null)} className="text-onam-muted hover:text-onam-kasavu">✕</button>
             </div>
-            <div className="max-h-[60vh] overflow-auto rounded-xl bg-onam-black p-2">
-              <img src={previewImage} alt="Payment Proof" className="w-full h-auto object-contain rounded" />
+            <div className="max-h-[60vh] overflow-auto rounded-xl bg-onam-black p-2 flex justify-center">
+              <img 
+                src={previewImage} 
+                alt="Payment Proof" 
+                className="w-full h-auto object-contain rounded max-h-[50vh]"
+                onError={(e) => {
+                  console.error("Receipt image failed to load:", e.target.src);
+                }}
+              />
             </div>
-            <button
-              onClick={() => setPreviewImage(null)}
-              className="w-full py-2.5 rounded-xl bg-onam-raised hover:bg-onam-line text-onam-kasavu font-semibold text-xs transition"
-            >
-              Close
-            </button>
+            <div className="flex items-center gap-2">
+              <a
+                href={previewImage}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 py-2.5 rounded-xl bg-onam-black border border-onam-line text-onam-gold font-semibold text-xs text-center hover:bg-onam-raised transition"
+              >
+                Open Image in New Tab ↗
+              </a>
+              <button
+                onClick={() => setPreviewImage(null)}
+                className="flex-1 py-2.5 rounded-xl bg-onam-raised hover:bg-onam-line text-onam-kasavu font-semibold text-xs transition"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
