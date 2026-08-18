@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/client';
 import { Pookalam, Thoran } from '../components/Pookalam';
@@ -12,6 +12,9 @@ export const Login = () => {
   const [showOverrideModal, setShowOverrideModal] = useState(false);
   const [overrideCode, setOverrideCode] = useState('');
   const [secretClickCount, setSecretClickCount] = useState(0);
+
+  const [gsiReady, setGsiReady] = useState(false);
+  const googleBtnRef = useRef(null);
 
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
@@ -55,6 +58,22 @@ export const Login = () => {
       callback: handleGoogleCredentialResponse,
       auto_select: false,
     });
+
+    // Google's own rendered button uses a popup flow, which keeps working when
+    // third-party cookies are blocked (Safari/Brave default) and after One Tap
+    // enters its dismissal cooldown. prompt() alone fails silently in both cases.
+    if (googleBtnRef.current) {
+      googleBtnRef.current.innerHTML = '';
+      window.google.accounts.id.renderButton(googleBtnRef.current, {
+        theme: 'outline',
+        size: 'large',
+        text: 'signin_with',
+        shape: 'pill',
+        logo_alignment: 'center',
+        width: 320,
+      });
+      setGsiReady(true);
+    }
   };
 
   const handleGoogleCredentialResponse = async (response) => {
@@ -203,10 +222,13 @@ export const Login = () => {
                 Welcome! Sign in with your student Google account to access or request your official Onam Sadhya pass.
               </p>
 
+              <div ref={googleBtnRef} className="flex justify-center [&>div]:!w-full" />
+
               <button
                 type="button"
                 disabled={loading}
                 onClick={handleGoogleSignIn}
+                hidden={gsiReady}
                 className="w-full py-4 px-5 rounded-2xl bg-white hover:bg-slate-50 text-slate-900 font-bold text-sm shadow-md border border-slate-200 transition flex items-center justify-center gap-3 active:scale-[0.98]"
               >
                 <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
