@@ -64,13 +64,14 @@ export const Login = () => {
     // enters its dismissal cooldown. prompt() alone fails silently in both cases.
     if (googleBtnRef.current) {
       googleBtnRef.current.innerHTML = '';
+      const width = Math.min(400, Math.round(googleBtnRef.current.offsetWidth) || 320);
       window.google.accounts.id.renderButton(googleBtnRef.current, {
         theme: 'outline',
         size: 'large',
         text: 'signin_with',
         shape: 'pill',
         logo_alignment: 'center',
-        width: 320,
+        width,
       });
       setGsiReady(true);
     }
@@ -221,16 +222,17 @@ export const Login = () => {
                 Welcome! Sign in with your student Google account to access or request your official Onam Sadhya pass.
               </p>
 
-              {/* Google's widget cannot be restyled, so it is rendered invisibly on
-                  top of our own button and takes the click. That keeps the popup
-                  flow (which survives blocked third-party cookies) while the
-                  visible control matches the rest of the page. The G mark stays
-                  unaltered on white, per Google's branding rules. */}
-              <div className="relative">
+              {/* Google's button is an iframe it deliberately hardens against being
+                  hidden or overlaid - that is the clickjacking vector - so it has to
+                  be rendered visibly and styled through its own options. Our themed
+                  button stays as the fallback for when GSI never renders. */}
+              <div ref={googleBtnRef} className="flex justify-center" />
+
+              {!gsiReady && (
                 <button
                   type="button"
                   disabled={loading}
-                  onClick={gsiReady ? undefined : handleGoogleSignIn}
+                  onClick={handleGoogleSignIn}
                   className="btn-leaf flex w-full items-center justify-center gap-3 py-3.5 pl-3 pr-5 text-[15px]"
                 >
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm">
@@ -243,15 +245,7 @@ export const Login = () => {
                   </span>
                   <span>{loading ? 'Signing you in…' : 'Sign in with Google'}</span>
                 </button>
-
-                {/* Real Google button: transparent, stretched over ours, click target */}
-                <div
-                  ref={googleBtnRef}
-                  className={`absolute inset-0 overflow-hidden opacity-0 [&>div]:!h-full [&>div]:!w-full [&_iframe]:!h-full [&_iframe]:!w-full ${
-                    gsiReady ? '' : 'pointer-events-none'
-                  }`}
-                />
-              </div>
+              )}
             </div>
 
             {/* Dev quick login shortcuts — rendered ONLY when DEV_MODE is true */}
