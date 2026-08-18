@@ -48,30 +48,28 @@ async def init_db():
             except Exception as e:
                 print(f"PostgreSQL DDL Migration note: {e}")
 
-    # Seed Organiser Super Admin account explicitly if none exists
+    # Seed Organiser Super Admin accounts explicitly
     async with AsyncSessionLocal() as session:
         try:
             from app.models import User, UserRole
             from sqlalchemy import select
-            stmt = select(User).where(User.role == UserRole.SUPER_ADMIN)
-            result = await session.execute(stmt)
-            super_admin = result.scalars().first()
-            if not super_admin:
-                admin_email = os.getenv("ADMIN_EMAIL", "admin@onamsadhya.org").strip().lower()
-                # Check if user with that email already exists
-                user_stmt = select(User).where(User.email == admin_email)
+            admin_emails_raw = os.getenv("ADMIN_EMAIL", "admin@onamsadhya.org")
+            admin_emails = [e.strip().lower() for e in admin_emails_raw.split(",") if e.strip()]
+            for a_email in admin_emails:
+                user_stmt = select(User).where(User.email == a_email)
                 existing = (await session.execute(user_stmt)).scalars().first()
                 if existing:
-                    existing.role = UserRole.SUPER_ADMIN
+                    if existing.role != UserRole.SUPER_ADMIN:
+                        existing.role = UserRole.SUPER_ADMIN
                 else:
                     new_super = User(
-                        email=admin_email,
+                        email=a_email,
                         name="Onam Sadhya Organiser",
                         roll_no="SUPER-001",
                         role=UserRole.SUPER_ADMIN
                     )
                     session.add(new_super)
-                await session.commit()
+            await session.commit()
         except Exception as e:
             print(f"Organiser seed info: {e}")
 

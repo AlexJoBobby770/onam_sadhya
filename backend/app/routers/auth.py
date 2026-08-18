@@ -61,9 +61,10 @@ async def google_login(payload: GoogleLoginRequest, db: AsyncSession = Depends(g
             detail="Could not verify Google account credentials. Missing email claim."
         )
 
-    # Check if Super Admin email match
-    admin_email = os.getenv("ADMIN_EMAIL", "admin@onamsadhya.org").strip().lower()
-    is_super_admin = (email == admin_email)
+    # Check if Super Admin email match (supports comma-separated list in ADMIN_EMAIL)
+    admin_emails_raw = os.getenv("ADMIN_EMAIL", "admin@onamsadhya.org")
+    admin_emails = [e.strip().lower() for e in admin_emails_raw.split(",") if e.strip()]
+    is_super_admin = (email in admin_emails)
 
     # Find or create user by email
     user_stmt = select(User).where(User.email == email)
