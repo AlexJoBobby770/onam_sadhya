@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/client';
 import { Pookalam, Thoran } from '../components/Pookalam';
-import { KeyRound, AlertCircle, X } from 'lucide-react';
+import { AlertCircle, X, ShieldAlert } from 'lucide-react';
 
 export const Login = () => {
   const { loginWithToken, devLogin } = useAuth();
@@ -11,6 +11,7 @@ export const Login = () => {
   const [devModeEnabled, setDevModeEnabled] = useState(false);
   const [showOverrideModal, setShowOverrideModal] = useState(false);
   const [overrideCode, setOverrideCode] = useState('');
+  const [secretClickCount, setSecretClickCount] = useState(0);
 
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
@@ -25,51 +26,51 @@ export const Login = () => {
       if (res.data && res.data.dev_mode) {
         setDevModeEnabled(true);
       }
-    } catch (e) {
-      // Ignore if dev_mode check fails
+    } catch (err) {
+      console.log('Dev mode check info:', err);
     }
   };
 
   const loadGoogleGSI = () => {
+    if (!googleClientId) return;
+
     if (window.google?.accounts?.id) {
-      initGoogleGSI();
+      initGSI();
       return;
     }
+
     const script = document.createElement('script');
     script.src = 'https://accounts.google.com/gsi/client';
     script.async = true;
     script.defer = true;
-    script.onload = () => initGoogleGSI();
+    script.onload = () => initGSI();
     document.body.appendChild(script);
   };
 
-  const initGoogleGSI = () => {
-    try {
-      if (window.google?.accounts?.id && googleClientId) {
-        window.google.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: (response) => {
-            if (response?.credential) {
-              handleGoogleCredential(response.credential);
-            }
-          }
-        });
-      }
-    } catch (e) {
-      console.warn('Google GSI Init:', e);
-    }
+  const initGSI = () => {
+    if (!window.google?.accounts?.id || !googleClientId) return;
+
+    window.google.accounts.id.initialize({
+      client_id: googleClientId,
+      callback: handleGoogleCredentialResponse,
+      auto_select: false,
+    });
   };
 
-  const handleGoogleCredential = async (credentialToken) => {
-    setError('');
+  const handleGoogleCredentialResponse = async (response) => {
+    if (!response.credential) return;
+
     setLoading(true);
+    setError('');
+
     try {
-      const res = await api.post('/auth/google', {
-        credential: credentialToken
-      });
-      loginWithToken(res.data.access_token, res.data.user);
+      const res = await api.post('/auth/google', { credential: response.credential });
+      if (res.data && res.data.access_token) {
+        loginWithToken(res.data.access_token, res.data.user);
+      }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Google authentication failed. Please try again.');
+      console.error('Google login error:', err);
+      setError(err.response?.data?.detail || 'Google sign-in failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -77,55 +78,79 @@ export const Login = () => {
 
   const handleGoogleSignIn = () => {
     setError('');
-    if (googleClientId && window.google?.accounts?.id) {
-      try {
-        window.google.accounts.id.prompt((notification) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            setError('Google sign-in popup was blocked or closed. Please allow popups or try again.');
-          }
-        });
-      } catch (e) {
-        setError('Could not open Google sign-in. Please ensure Google Client ID is configured.');
-      }
+    if (!googleClientId) {
+      setError('Google Sign-In is not configured yet (missing Client ID).');
+      return;
+    }
+    if (window.google?.accounts?.id) {
+      window.google.accounts.id.prompt((notification) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          console.warn('GSI prompt not displayed:', notification.getNotDisplayedReason());
+        }
+      });
     } else {
-      setError('Google Sign-In is initializing. Please tap again in a moment or refresh.');
+      setError('Google Services initializing. Please try again in a moment.');
     }
   };
 
   const handleAdminOverrideSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    if (!overrideCode.trim()) {
-      setError('Please enter the secret Admin Override Code');
-      return;
-    }
+    if (!overrideCode.strip && !overrideCode.trim()) return;
 
     setLoading(true);
+    setError('');
+
     try {
       const res = await api.post('/auth/admin-override', {
-        override_code: overrideCode.trim()
+        override_code: overrideCode.trim(),
       });
-      setShowOverrideModal(false);
-      loginWithToken(res.data.access_token, res.data.user);
+
+      if (res.data && res.data.access_token) {
+        setShowOverrideModal(false);
+        loginWithToken(res.data.access_token, res.data.user);
+      }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Invalid or rate-limited Admin Override Code.');
+      console.error('Admin override error:', err);
+      setError(err.response?.data?.detail || 'Invalid override key.');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSecretHeaderClick = () => {
+    setSecretClickCount((prev) => {
+      const next = prev + 1;
+      if (next >= 5) {
+        setShowOverrideModal(true);
+        return 0;
+      }
+      return next;
+    });
+  };
+
   const handleQuickDevLogin = async (role) => {
+    setLoading(true);
     setError('');
     try {
-      if (role === 'student') {
-        await devLogin('rahul.nair@gmail.com', 'Rahul Nair', 'student', 'CS2026');
-      } else if (role === 'admin') {
-        await devLogin('admin.volunteer@gmail.com', 'Ananya V (Volunteer Admin)', 'admin');
+      let email = 'student@onamsadhya.org';
+      let name = 'Sample Student';
+      let rollNo = 'CS-2026-001';
+
+      if (role === 'admin') {
+        email = 'volunteer@onamsadhya.org';
+        name = 'Gate Volunteer';
+        rollNo = 'VOL-2026';
       } else if (role === 'super_admin') {
-        await devLogin('superadmin@gmail.com', 'Dr. Radhakrishnan (Super Admin)', 'super_admin');
+        email = 'alexjobobby770@gmail.com';
+        name = 'Organiser Admin';
+        rollNo = 'SUPER-001';
       }
+
+      await devLogin({ email, name, role, roll_no: rollNo });
     } catch (err) {
-      setError(err.response?.data?.detail || 'Dev login is disabled in production.');
+      setError('Dev login failed.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -137,22 +162,30 @@ export const Login = () => {
     <div className="min-h-screen flex items-center justify-center px-4 py-10 bg-onam-black relative">
       <div className="w-full max-w-md">
 
-        {/* Pookalam crown sits above the card, not hidden behind it */}
+        {/* Pookalam crown sits above the card */}
         <div className="relative flex justify-center">
           <Pookalam className="h-40 w-40 drop-shadow-[0_10px_24px_rgba(120,60,0,0.28)]" />
         </div>
 
-        <div className="card-cream relative -mt-14 overflow-hidden">
+        <div className="card-cream relative -mt-14 overflow-hidden shadow-2xl">
           <div className="kasavu-band" />
 
-          <div className="relative px-7 pt-16 pb-7">
+          <div className="relative px-7 pt-16 pb-8">
 
             <div className="text-center">
-              <span className="block font-malayalam text-[13px] text-onam-maroon mb-1.5">ഓണം 2026</span>
+              <span
+                onClick={handleSecretHeaderClick}
+                className="block font-malayalam text-[13px] text-onam-maroon mb-1.5 cursor-default select-none"
+                title="Onam 2026"
+              >
+                ഓണം 2026
+              </span>
               <h2 className="font-serif text-[32px] font-semibold leading-tight text-onam-ink tracking-tight">
                 Onam Sadhya
               </h2>
-              <p className="text-[13px] text-onam-ink-soft mt-1.5">Gate pass registration · 21 Aug 2026</p>
+              <p className="text-[13px] text-onam-ink-soft mt-1.5 font-medium">
+                Gate pass registration · 21 Aug 2026
+              </p>
               <Thoran className="mx-auto mt-4 h-11 w-56 opacity-90" />
             </div>
 
@@ -160,21 +193,21 @@ export const Login = () => {
 
             {error && (
               <div className="mb-5 p-3.5 rounded-xl bg-onam-red/5 border border-onam-red/25 text-onam-maroon text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
+                <AlertCircle className="w-4 h-4 shrink-0 text-onam-red" />
                 <span>{error}</span>
               </div>
             )}
 
             <div className="space-y-4">
-              <p className="text-xs text-onam-muted text-center leading-relaxed px-2">
-                Welcome! Sign in with your Google account to access your official Onam Sadhya gate pass.
+              <p className="text-xs text-onam-ink-soft/90 text-center leading-relaxed px-2 font-sans">
+                Welcome! Sign in with your student Google account to access or request your official Onam Sadhya pass.
               </p>
 
               <button
                 type="button"
                 disabled={loading}
                 onClick={handleGoogleSignIn}
-                className="w-full py-4 px-5 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-sm shadow-xl transition flex items-center justify-center gap-3 active:scale-[0.98]"
+                className="w-full py-4 px-5 rounded-2xl bg-white hover:bg-slate-50 text-slate-900 font-bold text-sm shadow-md border border-slate-200 transition flex items-center justify-center gap-3 active:scale-[0.98]"
               >
                 <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
@@ -182,24 +215,13 @@ export const Login = () => {
                   <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.6H1.28C.46 8.23 0 10.06 0 12s.46 3.77 1.28 5.4h4z"/>
                   <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.7 1.28 6.6l4 3.13c.95-2.83 3.6-4.98 6.72-4.98z"/>
                 </svg>
-                <span>{loading ? 'Connecting Google…' : 'Sign in with Google'}</span>
+                <span>{loading ? 'Signing in…' : 'Sign in with Google'}</span>
               </button>
-
-              <div className="pt-3 text-center">
-                <button
-                  type="button"
-                  onClick={() => { setError(''); setShowOverrideModal(true); }}
-                  className="inline-flex items-center gap-1.5 text-[11px] text-onam-muted-dim hover:text-onam-gold transition"
-                >
-                  <KeyRound className="w-3.5 h-3.5" />
-                  <span>Organiser Security Override Key</span>
-                </button>
-              </div>
             </div>
 
-            {/* Dev shortcuts — rendered only when DEV_MODE is true */}
+            {/* Dev quick login shortcuts — rendered ONLY when DEV_MODE is true */}
             {devModeEnabled && (
-              <div className="mt-8">
+              <div className="mt-8 pt-4 border-t border-onam-cream-line">
                 <p className="font-mono text-[9.5px] tracking-[0.16em] uppercase text-onam-ink-soft/60 text-center mb-2.5">
                   Dev quick login
                 </p>
@@ -229,7 +251,7 @@ export const Login = () => {
 
       </div>
 
-      {/* Admin Security Override Modal */}
+      {/* Hidden Emergency Override Modal (Triggered strictly by 5 clicks on header title for offline dev/emergencies) */}
       {showOverrideModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-onam-deep border border-onam-line rounded-2xl max-w-sm w-full p-6 relative shadow-2xl">
@@ -241,11 +263,11 @@ export const Login = () => {
             </button>
 
             <div className="flex items-center gap-2.5 mb-2">
-              <KeyRound className="w-5 h-5 text-onam-gold" />
-              <h3 className="font-serif text-lg font-semibold text-onam-kasavu">Admin Security Override</h3>
+              <ShieldAlert className="w-5 h-5 text-onam-gold" />
+              <h3 className="font-serif text-lg font-semibold text-onam-kasavu">Emergency Emergency Mode</h3>
             </div>
             <p className="text-xs text-onam-muted leading-relaxed mb-4">
-              Enter the secret Organiser Security Key from backend environment configuration for emergency analytics access.
+              Enter secret override authorization code for offline emergency access.
             </p>
 
             <form onSubmit={handleAdminOverrideSubmit} className="space-y-4">
@@ -258,7 +280,7 @@ export const Login = () => {
                   required
                   value={overrideCode}
                   onChange={(e) => setOverrideCode(e.target.value)}
-                  placeholder="Enter secret key…"
+                  placeholder="Enter override key…"
                   className={inputClass}
                 />
               </div>
