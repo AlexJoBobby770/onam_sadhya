@@ -221,35 +221,37 @@ export const Login = () => {
                 Welcome! Sign in with your student Google account to access or request your official Onam Sadhya pass.
               </p>
 
-              {/* Google's rendered control, framed in kasavu gold. Its interior is
-                  Google-owned and must not be restyled, so the theming is the frame. */}
-              <div className={`gsi-frame flex justify-center ${gsiReady ? '' : 'hidden'}`}>
-                <div ref={googleBtnRef} />
+              {/* Google's widget cannot be restyled, so it is rendered invisibly on
+                  top of our own button and takes the click. That keeps the popup
+                  flow (which survives blocked third-party cookies) while the
+                  visible control matches the rest of the page. The G mark stays
+                  unaltered on white, per Google's branding rules. */}
+              <div className="relative">
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={gsiReady ? undefined : handleGoogleSignIn}
+                  className="btn-leaf flex w-full items-center justify-center gap-3 py-3.5 pl-3 pr-5 text-[15px]"
+                >
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm">
+                    <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                      <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.28v3.13C3.25 21.3 7.31 24 12 24z"/>
+                      <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.6H1.28C.46 8.23 0 10.06 0 12s.46 3.77 1.28 5.4h4z"/>
+                      <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.7 1.28 6.6l4 3.13c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                    </svg>
+                  </span>
+                  <span>{loading ? 'Signing you in…' : 'Sign in with Google'}</span>
+                </button>
+
+                {/* Real Google button: transparent, stretched over ours, click target */}
+                <div
+                  ref={googleBtnRef}
+                  className={`absolute inset-0 overflow-hidden opacity-0 [&>div]:!h-full [&>div]:!w-full [&_iframe]:!h-full [&_iframe]:!w-full ${
+                    gsiReady ? '' : 'pointer-events-none'
+                  }`}
+                />
               </div>
-
-              {/* Fallback only when Google's button never rendered. Conditional
-                  render, not the hidden attribute — Tailwind's `flex` would
-                  out-specify the UA display:none and show both buttons. */}
-              {!gsiReady && (
-              <button
-                type="button"
-                disabled={loading}
-                onClick={handleGoogleSignIn}
-                className="w-full py-4 px-5 rounded-2xl bg-white hover:bg-slate-50 text-slate-900 font-bold text-sm shadow-md border border-slate-200 transition flex items-center justify-center gap-3 active:scale-[0.98]"
-              >
-                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
-                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.28v3.13C3.25 21.3 7.31 24 12 24z"/>
-                  <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.6H1.28C.46 8.23 0 10.06 0 12s.46 3.77 1.28 5.4h4z"/>
-                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.7 1.28 6.6l4 3.13c.95-2.83 3.6-4.98 6.72-4.98z"/>
-                </svg>
-                <span>{loading ? 'Signing in…' : 'Sign in with Google'}</span>
-              </button>
-              )}
-
-              {loading && (
-                <p className="text-center text-[11.5px] text-onam-ink-soft">Signing you in…</p>
-              )}
             </div>
 
             {/* Dev quick login shortcuts — rendered ONLY when DEV_MODE is true */}

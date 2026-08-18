@@ -125,15 +125,6 @@
   }
   .btn-leaf:hover { filter: brightness(1.08); }
   .btn-leaf:disabled { opacity: 0.55; filter: none; }
-
-  /* Google renders its own button and its branding rules forbid restyling the
-     control itself, so the Onam treatment goes on the frame around it. */
-  .gsi-frame {
-    @apply rounded-2xl border border-onam-cream-line bg-white/60 p-2.5;
-    box-shadow: 0 1px 2px rgba(90, 60, 10, 0.06), inset 0 0 0 1px rgba(255, 219, 73, 0.35);
-  }
-  .gsi-frame > div { @apply !w-full; }
-  .gsi-frame iframe { margin: 0 auto !important; }
 }
 
 /* Custom Scrollbar */
