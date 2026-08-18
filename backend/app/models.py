@@ -60,6 +60,7 @@ class Ticket(Base):
     rejection_reason: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     reviewed_by: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
     qr_token: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True, index=True)
+    qr_code_png: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     used: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     scanned_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     scanned_by: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)

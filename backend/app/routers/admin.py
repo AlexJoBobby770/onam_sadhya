@@ -88,6 +88,7 @@ async def bulk_approve_tickets(
         if ticket.status == TicketStatus.PENDING:
             ticket.status = TicketStatus.APPROVED
             ticket.qr_token = generate_qr_token(ticket.id)
+            ticket.qr_code_png = generate_qr_code_base64(ticket.qr_token)
             ticket.reviewed_by = admin.id
             if payload.note:
                 ticket.payment_note = payload.note
@@ -141,6 +142,7 @@ async def approve_ticket(
 
     ticket.status = TicketStatus.APPROVED
     ticket.qr_token = qr_token
+    ticket.qr_code_png = generate_qr_code_base64(qr_token)
     ticket.reviewed_by = admin.id
     if payload and payload.note:
         ticket.payment_note = payload.note
@@ -169,6 +171,7 @@ async def reject_ticket(
     ticket.rejection_reason = payload.reason
     ticket.reviewed_by = admin.id
     ticket.qr_token = None
+    ticket.qr_code_png = None
 
     await db.commit()
     await db.refresh(ticket)

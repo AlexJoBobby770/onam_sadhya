@@ -24,7 +24,7 @@ MAX_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024  # 5MB cap
 def build_ticket_response(ticket: Ticket, with_qr: bool = False) -> TicketResponse:
     qr_b64 = None
     if with_qr and ticket.status == TicketStatus.APPROVED and ticket.qr_token:
-        qr_b64 = generate_qr_code_base64(ticket.qr_token)
+        qr_b64 = ticket.qr_code_png
 
     return TicketResponse(
         id=ticket.id,
@@ -86,6 +86,12 @@ async def get_my_ticket(
     ticket = result.scalars().first()
     if not ticket:
         return None
+
+    # Tickets approved before the image was cached on the row still need one built once.
+    if ticket.status == TicketStatus.APPROVED and ticket.qr_token and not ticket.qr_code_png:
+        ticket.qr_code_png = generate_qr_code_base64(ticket.qr_token)
+        await db.commit()
+
     return build_ticket_response(ticket, with_qr=True)
 
 @router.post("/tickets", response_model=TicketResponse)
