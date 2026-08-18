@@ -63,9 +63,47 @@
     .surface-festival::after { right: 0; }
   }
 
+  /* One card recipe: hairline, warm layered shadow, and a faint top highlight
+     so the surface reads as paper catching light rather than a flat rectangle. */
   .card-cream {
-    @apply rounded-3xl border border-onam-cream-line bg-onam-cream;
-    box-shadow: 0 22px 50px -28px rgba(90, 60, 10, 0.45);
+    @apply rounded-2xl border border-onam-cream-line bg-onam-cream;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.65) inset,
+      0 1px 2px rgba(90, 60, 10, 0.05),
+      0 12px 28px -18px rgba(90, 60, 10, 0.28);
+  }
+
+  /* Micro-label above a panel title. Carries the hierarchy so the title itself
+     can stay quiet instead of shouting. */
+  .panel-eyebrow {
+    @apply font-mono text-[9.5px] font-medium uppercase tracking-[0.18em] text-onam-gold-deep;
+  }
+
+  .panel-title {
+    @apply mt-1 font-serif text-[19px] font-semibold leading-none text-onam-ink;
+  }
+
+  /* Divider under a panel header — a hairline, not a decorative gold rule.
+     The gold rule is reserved for the page and pass headers. */
+  .panel-divider {
+    @apply my-4 h-px w-full bg-onam-cream-line;
+  }
+
+  /* Menu-style row: label, dotted leader stretching across, value hard right.
+     The leader is a repeating-gradient on a flex spacer, so it always fills
+     exactly the gap left over. */
+  .leader-row {
+    @apply flex items-baseline gap-2;
+  }
+  .leader-row > .leader-fill {
+    @apply mx-1 flex-1;
+    align-self: flex-end;
+    margin-bottom: 4px;
+    height: 1px;
+    background-image: radial-gradient(circle, #C9962B 0.5px, transparent 0.6px);
+    background-size: 5px 1px;
+    background-repeat: repeat-x;
+    opacity: 0.5;
   }
 
   .input-cream {
@@ -87,6 +125,15 @@
   }
   .btn-leaf:hover { filter: brightness(1.08); }
   .btn-leaf:disabled { opacity: 0.55; filter: none; }
+
+  /* Google renders its own button and its branding rules forbid restyling the
+     control itself, so the Onam treatment goes on the frame around it. */
+  .gsi-frame {
+    @apply rounded-2xl border border-onam-cream-line bg-white/60 p-2.5;
+    box-shadow: 0 1px 2px rgba(90, 60, 10, 0.06), inset 0 0 0 1px rgba(255, 219, 73, 0.35);
+  }
+  .gsi-frame > div { @apply !w-full; }
+  .gsi-frame iframe { margin: 0 auto !important; }
 }
 
 /* Custom Scrollbar */

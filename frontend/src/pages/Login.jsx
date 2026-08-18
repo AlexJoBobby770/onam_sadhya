@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/client';
-import { Pookalam, Thoran } from '../components/Pookalam';
+import { Pookalam, Thoran, FestivalBackdrop } from '../components/Pookalam';
 import { AlertCircle, X, ShieldAlert } from 'lucide-react';
 
 export const Login = () => {
@@ -173,13 +173,12 @@ export const Login = () => {
     }
   };
 
-  const inputClass =
-    'w-full bg-onam-black border border-onam-line rounded-xl px-4 py-3 text-onam-kasavu text-sm ' +
-    'placeholder-onam-muted-faint focus:outline-none focus:border-onam-gold-deep transition';
+  const inputClass = 'input-cream';
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-10 bg-onam-black relative">
-      <div className="w-full max-w-md">
+    <div className="surface-festival relative min-h-screen flex items-center justify-center px-4 py-10">
+      <FestivalBackdrop />
+      <div className="relative z-10 w-full max-w-md">
 
         {/* Pookalam crown sits above the card */}
         <div className="relative flex justify-center">
@@ -222,13 +221,20 @@ export const Login = () => {
                 Welcome! Sign in with your student Google account to access or request your official Onam Sadhya pass.
               </p>
 
-              <div ref={googleBtnRef} className="flex justify-center [&>div]:!w-full" />
+              {/* Google's rendered control, framed in kasavu gold. Its interior is
+                  Google-owned and must not be restyled, so the theming is the frame. */}
+              <div className={`gsi-frame flex justify-center ${gsiReady ? '' : 'hidden'}`}>
+                <div ref={googleBtnRef} />
+              </div>
 
+              {/* Fallback only when Google's button never rendered. Conditional
+                  render, not the hidden attribute — Tailwind's `flex` would
+                  out-specify the UA display:none and show both buttons. */}
+              {!gsiReady && (
               <button
                 type="button"
                 disabled={loading}
                 onClick={handleGoogleSignIn}
-                hidden={gsiReady}
                 className="w-full py-4 px-5 rounded-2xl bg-white hover:bg-slate-50 text-slate-900 font-bold text-sm shadow-md border border-slate-200 transition flex items-center justify-center gap-3 active:scale-[0.98]"
               >
                 <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
@@ -239,6 +245,11 @@ export const Login = () => {
                 </svg>
                 <span>{loading ? 'Signing in…' : 'Sign in with Google'}</span>
               </button>
+              )}
+
+              {loading && (
+                <p className="text-center text-[11.5px] text-onam-ink-soft">Signing you in…</p>
+              )}
             </div>
 
             {/* Dev quick login shortcuts — rendered ONLY when DEV_MODE is true */}
@@ -276,25 +287,25 @@ export const Login = () => {
       {/* Hidden Emergency Override Modal (Triggered strictly by 5 clicks on header title for offline dev/emergencies) */}
       {showOverrideModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-onam-deep border border-onam-line rounded-2xl max-w-sm w-full p-6 relative shadow-2xl">
+          <div className="card-cream max-w-sm w-full p-6 relative">
             <button
               onClick={() => setShowOverrideModal(false)}
-              className="absolute top-4 right-4 text-onam-muted hover:text-onam-kasavu transition"
+              className="absolute top-4 right-4 text-onam-ink-soft hover:text-onam-ink transition"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div className="flex items-center gap-2.5 mb-2">
               <ShieldAlert className="w-5 h-5 text-onam-gold" />
-              <h3 className="font-serif text-lg font-semibold text-onam-kasavu">Emergency Emergency Mode</h3>
+              <h3 className="font-serif text-lg font-semibold text-onam-ink">Emergency Mode</h3>
             </div>
-            <p className="text-xs text-onam-muted leading-relaxed mb-4">
+            <p className="text-xs text-onam-ink-soft leading-relaxed mb-4">
               Enter secret override authorization code for offline emergency access.
             </p>
 
             <form onSubmit={handleAdminOverrideSubmit} className="space-y-4">
               <div>
-                <label className="block text-[10.5px] font-bold uppercase tracking-[0.1em] text-onam-muted mb-1.5">
+                <label className="label-cream">
                   Override Code
                 </label>
                 <input
@@ -310,7 +321,7 @@ export const Login = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="btn-gold w-full py-3 text-xs font-bold"
+                className="btn-leaf w-full py-3.5 text-[13px]"
               >
                 {loading ? 'Verifying Key…' : 'Authenticate Override'}
               </button>

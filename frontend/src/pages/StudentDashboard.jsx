@@ -165,22 +165,38 @@ export const StudentDashboard = () => {
 
         {/* Side panel — event facts. Sits under the main card on phones. */}
         <aside className="order-2 lg:order-1 card-cream p-6">
-          <h3 className="font-serif text-lg font-semibold text-onam-ink">The Sadhya</h3>
-          <div className="rule-gold my-4" />
-          <dl className="space-y-3.5 text-sm">
+          <p className="panel-eyebrow">The feast</p>
+          <h3 className="panel-title">Onam Sadhya</h3>
+          <div className="panel-divider" />
+
+          {/* Menu-card leaders: the eye tracks the dots to the value, so labels
+              can stay small without the row falling apart. */}
+          <dl className="space-y-3">
             {[
               ['Date', '21 August 2026'],
               ['Serving', '12:30 pm onwards'],
               ['Venue', 'College Hall'],
-              ['Contribution', '₹250 per plate'],
             ].map(([k, v]) => (
-              <div key={k} className="flex items-baseline justify-between gap-3">
-                <dt className="text-[11px] font-bold uppercase tracking-[0.1em] text-onam-ink-soft">{k}</dt>
-                <dd className="text-right font-medium text-onam-ink">{v}</dd>
+              <div key={k} className="leader-row">
+                <dt className="text-[12px] text-onam-ink-soft">{k}</dt>
+                <span className="leader-fill" aria-hidden="true" />
+                <dd className="text-[13px] font-medium text-onam-ink tabular-nums">{v}</dd>
               </div>
             ))}
           </dl>
-          <p className="mt-5 rounded-xl bg-onam-cream-deep px-3.5 py-3 text-[11.5px] leading-relaxed text-onam-ink-soft">
+
+          {/* The price is the one number that matters, so it gets to be a figure */}
+          <div className="mt-5 flex items-end justify-between border-t border-onam-cream-line pt-4">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.12em] text-onam-ink-soft">Contribution</p>
+              <p className="text-[11px] text-onam-ink-soft/70">per plate</p>
+            </div>
+            <p className="font-serif text-[30px] font-semibold leading-none text-onam-leaf-deep tabular-nums">
+              ₹250
+            </p>
+          </div>
+
+          <p className="mt-5 border-l-2 border-onam-gold-deep/50 pl-3 text-[11.5px] leading-relaxed text-onam-ink-soft">
             Seats are limited to the hall's capacity. Passes are issued in the order payments
             are verified.
           </p>
@@ -191,16 +207,19 @@ export const StudentDashboard = () => {
 
       {/* CASE 0: PROFILE INCOMPLETE -> MANDATORY ROLL NO FORM */}
       {(!user?.roll_no || !user.roll_no.trim()) ? (
-        <div className="bg-onam-deep border border-onam-line rounded-2xl overflow-hidden p-6 space-y-5">
+        <div className="card-cream overflow-hidden">
+          <div className="kasavu-band" />
+          <div className="p-6 space-y-5">
           <div>
-            <h3 className="font-serif text-xl font-semibold text-onam-kasavu">Complete your profile</h3>
-            <p className="text-xs text-onam-muted mt-1.5 leading-relaxed">
+            <p className="panel-eyebrow">One more thing</p>
+            <h3 className="panel-title !text-2xl">Complete your profile</h3>
+            <p className="text-[13px] text-onam-ink-soft mt-2 leading-relaxed">
               Please enter your Class or Roll Number to activate pass requesting.
             </p>
           </div>
 
           {error && (
-            <div className="p-3 rounded-xl bg-onam-red/10 border border-onam-red/30 text-red-300 text-xs flex items-center gap-2">
+            <div className="p-3 rounded-xl bg-onam-red/5 border border-onam-red/25 text-onam-maroon text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -208,47 +227,45 @@ export const StudentDashboard = () => {
 
           <form onSubmit={handleSaveProfile} className="space-y-4">
             <div>
-              <label className="block text-[10.5px] font-bold uppercase tracking-[0.1em] text-onam-muted mb-1.5">
-                Full Name
-              </label>
+              <label className="label-cream">Full Name</label>
               <input
                 type="text"
                 required
                 value={studentName}
                 onChange={(e) => setStudentName(e.target.value)}
                 placeholder="Rahul Nair"
-                className="w-full bg-onam-black border border-onam-line rounded-xl px-4 py-3 text-onam-kasavu text-sm placeholder-onam-muted-faint focus:outline-none focus:border-onam-gold-deep transition"
+                className="input-cream"
               />
             </div>
 
             <div>
-              <label className="block text-[10.5px] font-bold uppercase tracking-[0.1em] text-onam-muted mb-1.5">
-                Class / Roll Number
-              </label>
+              <label className="label-cream">Class / Roll Number</label>
               <input
                 type="text"
                 required
                 value={rollNo}
                 onChange={(e) => setRollNo(e.target.value)}
                 placeholder="CS2026 / 12-A"
-                className="w-full bg-onam-black border border-onam-line rounded-xl px-4 py-3 text-onam-kasavu text-sm font-mono uppercase placeholder-onam-muted-faint focus:outline-none focus:border-onam-gold-deep transition"
+                className="input-cream font-mono uppercase"
               />
             </div>
 
             <button
               type="submit"
               disabled={submitting}
-              className="btn-gold w-full py-3.5 px-4 text-sm font-bold"
+              className="btn-leaf w-full py-4 px-4 text-[15px]"
             >
               {submitting ? 'Saving profile…' : 'Save profile & continue'}
             </button>
           </form>
+          </div>
         </div>
       ) : (
         <>
           {/* CASE 1: NO TICKET YET OR REJECTED -> SUBMISSION FORM */}
           {(!ticket || ticket.status === 'rejected') && (
-        <div className="bg-onam-deep border border-onam-line rounded-2xl overflow-hidden">
+        <div className="card-cream overflow-hidden">
+          <div className="kasavu-band" />
           <div className="p-6 space-y-5">
 
             {ticket?.status === 'rejected' && (
@@ -265,8 +282,9 @@ export const StudentDashboard = () => {
             )}
 
             <div>
-              <h3 className="font-serif text-2xl font-semibold text-onam-ink">Request your pass</h3>
-              <p className="text-[13px] text-onam-ink-soft mt-1.5 leading-relaxed">
+              <p className="panel-eyebrow">Step 2 of 3</p>
+              <h3 className="panel-title !text-2xl">Request your pass</h3>
+              <p className="text-[13px] text-onam-ink-soft mt-2 leading-relaxed">
                 Pay ₹250 by UPI to a committee member, then upload the receipt here for verification.
               </p>
             </div>
@@ -462,17 +480,25 @@ export const StudentDashboard = () => {
 
         {/* Side panel — how it works. */}
         <aside className="order-3 card-cream p-6">
-          <h3 className="font-serif text-lg font-semibold text-onam-ink">How it works</h3>
-          <div className="rule-gold my-4" />
-          <ol className="space-y-4">
-            {steps.map((s) => (
-              <li key={s.n} className="flex gap-3">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-onam-leaf-deep font-mono text-[12px] font-bold text-onam-kasavu">
-                  {s.n}
+          <p className="panel-eyebrow">Getting in</p>
+          <h3 className="panel-title">How it works</h3>
+          <div className="panel-divider" />
+
+          {/* A rail connects the markers so the three steps read as one sequence
+              rather than three unrelated bullets. */}
+          <ol className="relative">
+            <span
+              aria-hidden="true"
+              className="absolute left-[13px] top-3 bottom-3 w-px bg-onam-cream-line"
+            />
+            {steps.map((step, i) => (
+              <li key={step.n} className={`relative flex gap-4 ${i < steps.length - 1 ? 'pb-6' : ''}`}>
+                <span className="relative z-10 flex h-[27px] w-[27px] shrink-0 items-center justify-center rounded-full border border-onam-gold-deep/45 bg-onam-cream font-serif text-[13px] font-semibold text-onam-leaf-deep">
+                  {step.n}
                 </span>
-                <div>
-                  <p className="text-[13.5px] font-bold text-onam-ink">{s.title}</p>
-                  <p className="mt-0.5 text-[12px] leading-relaxed text-onam-ink-soft">{s.body}</p>
+                <div className="pt-[3px]">
+                  <p className="text-[13.5px] font-semibold leading-snug text-onam-ink">{step.title}</p>
+                  <p className="mt-1 text-[12px] leading-relaxed text-onam-ink-soft">{step.body}</p>
                 </div>
               </li>
             ))}
