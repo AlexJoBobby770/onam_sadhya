@@ -115,6 +115,13 @@ export const AdminDashboard = ({ onOpenScanner }) => {
     }
   };
 
+  const getImageUrl = (url) => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    const baseUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+    return `${baseUrl}${url}`;
+  };
+
   const pendingCount = tickets.filter(t => t.status === 'pending').length;
   const isAllPendingSelected = pendingCount > 0 && tickets.filter(t => t.status === 'pending').every(t => selectedIds.has(t.id));
 
@@ -264,7 +271,7 @@ export const AdminDashboard = ({ onOpenScanner }) => {
               <div className="space-y-2 pt-2 border-t border-onam-line">
                 {t.payment_proof_url ? (
                   <button
-                    onClick={() => setPreviewImage(t.payment_proof_url)}
+                    onClick={() => setPreviewImage(getImageUrl(t.payment_proof_url))}
                     className="w-full py-2 px-3 rounded-lg bg-onam-black hover:bg-onam-raised border border-onam-line text-xs font-medium text-onam-gold flex items-center justify-center gap-1.5 transition"
                   >
                     <Eye className="w-3.5 h-3.5" />
