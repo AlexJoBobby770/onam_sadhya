@@ -137,27 +137,29 @@ export const Login = () => {
     <div className="min-h-screen flex items-center justify-center px-4 py-10 bg-onam-black relative">
       <div className="w-full max-w-md">
 
-        <div className="relative overflow-hidden rounded-3xl bg-onam-deep border border-onam-line shadow-2xl">
-          <Pookalam className="absolute left-1/2 -translate-x-1/2 -top-[252px] w-[340px] h-[340px] opacity-[0.22] pointer-events-none" />
-          <div
-            className="absolute left-1/2 -translate-x-1/2 -top-[120px] w-[400px] h-[230px] pointer-events-none"
-            style={{ background: 'radial-gradient(ellipse at center, rgba(255,140,0,0.10), transparent 70%)' }}
-          />
+        {/* Pookalam crown sits above the card, not hidden behind it */}
+        <div className="relative flex justify-center">
+          <Pookalam className="h-40 w-40 drop-shadow-[0_10px_24px_rgba(120,60,0,0.28)]" />
+        </div>
+
+        <div className="card-cream relative -mt-14 overflow-hidden">
+          <div className="kasavu-band" />
 
           <div className="relative px-7 pt-16 pb-7">
 
             <div className="text-center">
-              <span className="block font-malayalam text-[13px] text-onam-gold mb-1.5">ഓണം 2026</span>
-              <h2 className="font-serif text-[29px] font-semibold leading-tight text-onam-kasavu tracking-tight">
+              <span className="block font-malayalam text-[13px] text-onam-maroon mb-1.5">ഓണം 2026</span>
+              <h2 className="font-serif text-[32px] font-semibold leading-tight text-onam-ink tracking-tight">
                 Onam Sadhya
               </h2>
-              <p className="text-xs text-onam-muted mt-1.5">Gate pass registration</p>
+              <p className="text-[13px] text-onam-ink-soft mt-1.5">Gate pass registration · 21 Aug 2026</p>
+              <Thoran className="mx-auto mt-4 h-11 w-56 opacity-90" />
             </div>
 
             <div className="rule-gold my-6" />
 
             {error && (
-              <div className="mb-5 p-3.5 rounded-xl bg-onam-red/10 border border-onam-red/30 text-red-300 text-xs flex items-center gap-2">
+              <div className="mb-5 p-3.5 rounded-xl bg-onam-red/5 border border-onam-red/25 text-onam-maroon text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{error}</span>
               </div>
@@ -198,10 +200,10 @@ export const Login = () => {
             {/* Dev shortcuts — rendered only when DEV_MODE is true */}
             {devModeEnabled && (
               <div className="mt-8">
-                <p className="font-mono text-[9.5px] tracking-[0.16em] uppercase text-onam-muted-faint text-center mb-2.5">
+                <p className="font-mono text-[9.5px] tracking-[0.16em] uppercase text-onam-ink-soft/60 text-center mb-2.5">
                   Dev quick login
                 </p>
-                <div className="grid grid-cols-3 rounded-xl overflow-hidden border border-onam-line bg-onam-black">
+                <div className="grid grid-cols-3 rounded-xl overflow-hidden border border-onam-cream-line bg-onam-cream-deep">
                   {[
                     { role: 'student', label: 'Student' },
                     { role: 'admin', label: 'Admin' },
@@ -211,8 +213,8 @@ export const Login = () => {
                       key={item.role}
                       type="button"
                       onClick={() => handleQuickDevLogin(item.role)}
-                      className={`py-2.5 px-1.5 text-[11.5px] font-medium text-onam-muted hover:bg-onam-raised hover:text-onam-kasavu transition ${
-                        i < 2 ? 'border-r border-onam-line' : ''
+                      className={`py-2.5 px-1.5 text-[11.5px] font-medium text-onam-ink-soft hover:bg-onam-cream hover:text-onam-ink transition ${
+                        i < 2 ? 'border-r border-onam-cream-line' : ''
                       }`}
                     >
                       {item.label}
