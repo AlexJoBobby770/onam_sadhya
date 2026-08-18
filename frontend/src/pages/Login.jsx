@@ -14,6 +14,7 @@ export const Login = () => {
   const [secretClickCount, setSecretClickCount] = useState(0);
 
   const [gsiReady, setGsiReady] = useState(false);
+  const [gsiTimedOut, setGsiTimedOut] = useState(false);
   const googleBtnRef = useRef(null);
 
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
@@ -21,6 +22,13 @@ export const Login = () => {
   useEffect(() => {
     checkDevMode();
     loadGoogleGSI();
+
+    // GSI usually renders in well under a second, but on slow gate-side wifi
+    // it can take longer. Rather than show the themed fallback immediately
+    // (which then gets replaced by Google's button a moment later - the
+    // flash), wait briefly and only fall back if GSI genuinely hasn't shown up.
+    const timer = setTimeout(() => setGsiTimedOut(true), 2500);
+    return () => clearTimeout(timer);
   }, []);
 
   const checkDevMode = async () => {
@@ -226,9 +234,13 @@ export const Login = () => {
                   hidden or overlaid - that is the clickjacking vector - so it has to
                   be rendered visibly and styled through its own options. Our themed
                   button stays as the fallback for when GSI never renders. */}
-              <div ref={googleBtnRef} className="flex justify-center" />
+              <div ref={googleBtnRef} className="flex justify-center min-h-[44px]" />
 
-              {!gsiReady && (
+              {!gsiReady && !gsiTimedOut && (
+                <div className="w-full h-[44px] rounded-full bg-onam-cream-line/60 animate-pulse" />
+              )}
+
+              {!gsiReady && gsiTimedOut && (
                 <button
                   type="button"
                   disabled={loading}
