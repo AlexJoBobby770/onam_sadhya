@@ -117,9 +117,22 @@ export const AdminDashboard = ({ onOpenScanner }) => {
 
   const getImageUrl = (url) => {
     if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url;
     const baseUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
     return `${baseUrl}${url}`;
+  };
+
+  const handleOpenNewTab = (url) => {
+    if (!url) return;
+    const targetUrl = getImageUrl(url);
+    if (targetUrl.startsWith('data:')) {
+      const win = window.open();
+      if (win) {
+        win.document.write(`<!DOCTYPE html><html><head><title>Receipt Image Preview</title></head><body style="margin:0; background:#0f0f11; display:flex; items-center; justify-content:center; min-height:100vh;"><img src="${targetUrl}" style="max-width:90vw; max-height:90vh; object-contain:fit; border-radius:12px; box-shadow:0 20px 40px rgba(0,0,0,0.8);" /></body></html>`);
+      }
+    } else {
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
+    }
   };
 
   const pendingCount = tickets.filter(t => t.status === 'pending').length;
@@ -352,14 +365,13 @@ export const AdminDashboard = ({ onOpenScanner }) => {
               />
             </div>
             <div className="flex items-center gap-2">
-              <a
-                href={previewImage}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                onClick={() => handleOpenNewTab(previewImage)}
                 className="flex-1 py-2.5 rounded-xl bg-onam-black border border-onam-line text-onam-gold font-semibold text-xs text-center hover:bg-onam-raised transition"
               >
                 Open Image in New Tab ↗
-              </a>
+              </button>
               <button
                 onClick={() => setPreviewImage(null)}
                 className="flex-1 py-2.5 rounded-xl bg-onam-raised hover:bg-onam-line text-onam-kasavu font-semibold text-xs transition"

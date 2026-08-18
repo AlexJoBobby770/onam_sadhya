@@ -1,5 +1,6 @@
 import os
 import uuid
+import base64
 from typing import Optional
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
@@ -137,7 +138,11 @@ async def submit_ticket(
         ext = os.path.splitext(proof_file.filename)[1] or ".png"
         filename = f"proof_{current_user.id}_{uuid.uuid4().hex[:8]}{ext}"
 
-        # 3. Stream upload to Supabase Storage if configured, else local storage
+        # Convert image bytes to Base64 data URL for 100% persistent DB storage fallback
+        b64_str = base64.b64encode(file_bytes).decode('utf-8')
+        data_url = f"data:{content_type};base64,{b64_str}"
+
+        # 3. Stream upload to Supabase Storage if configured, else Base64 DB storage
         if settings.SUPABASE_URL and settings.SUPABASE_KEY:
             try:
                 async with httpx.AsyncClient() as client:
@@ -151,22 +156,13 @@ async def submit_ticket(
                     if res.status_code in (200, 201):
                         file_url = f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1/object/public/{settings.SUPABASE_BUCKET}/{filename}"
                     else:
-                        print(f"--> [SUPABASE STORAGE UPLOAD WARNING] Status {res.status_code}: {res.text}. Using local storage fallback.")
-                        filepath = os.path.join(UPLOAD_DIR, filename)
-                        with open(filepath, "wb") as f:
-                            f.write(file_bytes)
-                        file_url = f"/uploads/proofs/{filename}"
+                        print(f"--> [SUPABASE STORAGE UPLOAD WARNING] Status {res.status_code}: {res.text}. Falling back to Base64 DB storage.")
+                        file_url = data_url
             except Exception as e:
-                print(f"--> [SUPABASE STORAGE EXCEPTION] {e}. Using local storage fallback.")
-                filepath = os.path.join(UPLOAD_DIR, filename)
-                with open(filepath, "wb") as f:
-                    f.write(file_bytes)
-                file_url = f"/uploads/proofs/{filename}"
+                print(f"--> [SUPABASE STORAGE EXCEPTION] {e}. Falling back to Base64 DB storage.")
+                file_url = data_url
         else:
-            filepath = os.path.join(UPLOAD_DIR, filename)
-            with open(filepath, "wb") as f:
-                f.write(file_bytes)
-            file_url = f"/uploads/proofs/{filename}"
+            file_url = data_url
 
     ticket = Ticket(
         user_id=current_user.id,
