@@ -1,6 +1,6 @@
 import csv
 import io
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, status, Query
@@ -55,7 +55,7 @@ async def list_tickets(
         stmt = stmt.where(
             or_(
                 func.lower(User.name).like(s),
-                func.lower(User.phone).like(s),
+                func.lower(User.email).like(s),
                 func.lower(User.roll_no).like(s)
             )
         )
@@ -113,6 +113,7 @@ async def list_approved_tickets(
     return [{
         "ticket_id": t.id,
         "user_name": t.user.name if t.user else "",
+        "user_email": t.user.email if t.user else "",
         "user_phone": t.user.phone if t.user else "",
         "user_roll_no": t.user.roll_no if t.user else "",
         "qr_token": t.qr_token,
@@ -237,6 +238,7 @@ async def scan_qr_code(
             status="GRANTED",
             student_name=ticket.user.name,
             roll_no=ticket.user.roll_no,
+            email=ticket.user.email,
             phone=ticket.user.phone,
             scanned_at=ticket.scanned_at,
             scanned_by_name=admin.name
@@ -254,7 +256,8 @@ async def scan_qr_code(
         if ticket.used:
             scanned_by_str = ticket.scanner.name if ticket.scanner else "Gatekeeper"
             # Timezone Fix: Convert to Asia/Kolkata IST
-            ist_scanned_at = ticket.scanned_at.astimezone(ZoneInfo("Asia/Kolkata")) if ticket.scanned_at else now
+            ist_tz = timezone(timedelta(hours=5, minutes=30))
+            ist_scanned_at = ticket.scanned_at.astimezone(ist_tz) if ticket.scanned_at else now
             formatted_time = ist_scanned_at.strftime('%I:%M %p')
             return ScanResponse(
                 success=False,
@@ -262,6 +265,7 @@ async def scan_qr_code(
                 status="ALREADY_USED",
                 student_name=ticket.user.name,
                 roll_no=ticket.user.roll_no,
+                email=ticket.user.email,
                 phone=ticket.user.phone,
                 previously_scanned_at=ticket.scanned_at,
                 scanned_by_name=scanned_by_str
@@ -324,6 +328,7 @@ async def scan_manual(
             status="GRANTED",
             student_name=ticket.user.name,
             roll_no=ticket.user.roll_no,
+            email=ticket.user.email,
             phone=ticket.user.phone,
             scanned_at=ticket.scanned_at,
             scanned_by_name=admin.name
@@ -339,7 +344,8 @@ async def scan_manual(
 
         if ticket.used:
             scanned_by_str = ticket.scanner.name if ticket.scanner else "Gatekeeper"
-            ist_scanned_at = ticket.scanned_at.astimezone(ZoneInfo("Asia/Kolkata")) if ticket.scanned_at else now
+            ist_tz = timezone(timedelta(hours=5, minutes=30))
+            ist_scanned_at = ticket.scanned_at.astimezone(ist_tz) if ticket.scanned_at else now
             formatted_time = ist_scanned_at.strftime('%I:%M %p')
             return ScanResponse(
                 success=False,
@@ -347,6 +353,7 @@ async def scan_manual(
                 status="ALREADY_USED",
                 student_name=ticket.user.name,
                 roll_no=ticket.user.roll_no,
+                email=ticket.user.email,
                 phone=ticket.user.phone,
                 previously_scanned_at=ticket.scanned_at,
                 scanned_by_name=scanned_by_str
@@ -432,7 +439,7 @@ async def export_tickets_csv(
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow([
-        "Ticket ID", "Student Name", "Roll No", "Phone", "Status",
+        "Ticket ID", "Student Name", "Roll No", "Email", "Status",
         "Payment Note", "Rejection Reason", "Used", "Scanned At", "Scanned By", "Created At"
     ])
 
@@ -441,7 +448,7 @@ async def export_tickets_csv(
             t.id,
             t.user.name if t.user else "",
             t.user.roll_no if t.user else "",
-            t.user.phone if t.user else "",
+            t.user.email if t.user else "",
             t.status.value,
             t.payment_note or "",
             t.rejection_reason or "",

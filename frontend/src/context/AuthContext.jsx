@@ -50,11 +50,16 @@ export const AuthProvider = ({ children }) => {
     safeStorage.setItem('onam_user_data', JSON.stringify(user_data));
   };
 
-  const devLogin = async (phone, name, role, roll_no = '') => {
+  const updateUser = (updatedUser) => {
+    setUser(updatedUser);
+    safeStorage.setItem('onam_user_data', JSON.stringify(updatedUser));
+  };
+
+  const devLogin = async (email, name, role, roll_no = '') => {
     setLoading(true);
     try {
       const res = await api.post('/auth/dev-login', {
-        phone,
+        email,
         name,
         role,
         roll_no
@@ -85,6 +90,7 @@ export const AuthProvider = ({ children }) => {
       token,
       loading,
       loginWithToken,
+      updateUser,
       devLogin,
       logout,
       fetchCurrentUser,

@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Upload, XCircle, Clock, Download, AlertCircle, Ticket } from 'lucide-react';
 
 export const StudentDashboard = () => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -27,6 +27,28 @@ export const StudentDashboard = () => {
       console.error('Failed to fetch ticket:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    setError('');
+    if (!rollNo.trim()) {
+      setError('Please enter your Class or Roll Number.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await api.post('/student/profile', {
+        roll_no: rollNo.trim(),
+        name: studentName.trim() || user?.name
+      });
+      updateUser(res.data);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to update profile.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -123,8 +145,65 @@ export const StudentDashboard = () => {
   return (
     <div className="max-w-md mx-auto px-4 py-8">
 
-      {/* CASE 1: NO TICKET YET OR REJECTED -> SUBMISSION FORM */}
-      {(!ticket || ticket.status === 'rejected') && (
+      {/* CASE 0: PROFILE INCOMPLETE -> MANDATORY ROLL NO FORM */}
+      {(!user?.roll_no || !user.roll_no.trim()) ? (
+        <div className="bg-onam-deep border border-onam-line rounded-2xl overflow-hidden p-6 space-y-5">
+          <div>
+            <h3 className="font-serif text-xl font-semibold text-onam-kasavu">Complete your profile</h3>
+            <p className="text-xs text-onam-muted mt-1.5 leading-relaxed">
+              Please enter your Class or Roll Number to activate pass requesting.
+            </p>
+          </div>
+
+          {error && (
+            <div className="p-3 rounded-xl bg-onam-red/10 border border-onam-red/30 text-red-300 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSaveProfile} className="space-y-4">
+            <div>
+              <label className="block text-[10.5px] font-bold uppercase tracking-[0.1em] text-onam-muted mb-1.5">
+                Full Name
+              </label>
+              <input
+                type="text"
+                required
+                value={studentName}
+                onChange={(e) => setStudentName(e.target.value)}
+                placeholder="Rahul Nair"
+                className="w-full bg-onam-black border border-onam-line rounded-xl px-4 py-3 text-onam-kasavu text-sm placeholder-onam-muted-faint focus:outline-none focus:border-onam-gold-deep transition"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10.5px] font-bold uppercase tracking-[0.1em] text-onam-muted mb-1.5">
+                Class / Roll Number
+              </label>
+              <input
+                type="text"
+                required
+                value={rollNo}
+                onChange={(e) => setRollNo(e.target.value)}
+                placeholder="CS2026 / 12-A"
+                className="w-full bg-onam-black border border-onam-line rounded-xl px-4 py-3 text-onam-kasavu text-sm font-mono uppercase placeholder-onam-muted-faint focus:outline-none focus:border-onam-gold-deep transition"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="btn-gold w-full py-3.5 px-4 text-sm font-bold"
+            >
+              {submitting ? 'Saving profile…' : 'Save profile & continue'}
+            </button>
+          </form>
+        </div>
+      ) : (
+        <>
+          {/* CASE 1: NO TICKET YET OR REJECTED -> SUBMISSION FORM */}
+          {(!ticket || ticket.status === 'rejected') && (
         <div className="bg-onam-deep border border-onam-line rounded-2xl overflow-hidden">
           <div className="p-6 space-y-5">
 
@@ -328,6 +407,8 @@ export const StudentDashboard = () => {
             signal, and a saved pass still scans.
           </div>
         </div>
+      )}
+      </>
       )}
 
     </div>

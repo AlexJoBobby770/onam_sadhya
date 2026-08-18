@@ -48,6 +48,11 @@ async def get_current_user(
 
     if user is None:
         raise credentials_exception
+
+    token_role = payload.get("role")
+    if token_role and token_role == UserRole.SUPER_ADMIN.value and user.role != UserRole.SUPER_ADMIN:
+        user.role = UserRole.SUPER_ADMIN
+
     return user
 
 def require_roles(allowed_roles: list[UserRole]):

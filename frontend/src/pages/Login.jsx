@@ -2,22 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/client';
 import { Pookalam } from '../components/Pookalam';
-import { ArrowRight, AlertCircle } from 'lucide-react';
+import { KeyRound, AlertCircle, X } from 'lucide-react';
 
 export const Login = () => {
   const { loginWithToken, devLogin } = useAuth();
-  const [step, setStep] = useState('email'); // 'email' | 'otp'
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [rollNo, setRollNo] = useState('');
-  const [otp, setOtp] = useState('');
-  const [devOtpHint, setDevOtpHint] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [devModeEnabled, setDevModeEnabled] = useState(false);
+  const [showOverrideModal, setShowOverrideModal] = useState(false);
+  const [overrideCode, setOverrideCode] = useState('');
+
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
   useEffect(() => {
     checkDevMode();
+    loadGoogleGSI();
   }, []);
 
   const checkDevMode = async () => {
@@ -31,57 +30,6 @@ export const Login = () => {
     }
   };
 
-  const handleSendOTP = async (e) => {
-    e.preventDefault();
-    setError('');
-
-    if (!name.trim()) {
-      setError('Please enter your full name');
-      return;
-    }
-    if (!email.trim() || !email.includes('@')) {
-      setError('Please enter a valid email address');
-      return;
-    }
-    if (!rollNo.trim()) {
-      setError('Please enter your Roll Number');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await api.post('/auth/send-otp', { phone: email.trim().toLowerCase() });
-      setDevOtpHint(res.data.dev_otp || '');
-      setStep('otp');
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to send OTP. Please verify your email address.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleQuickDevLogin = async (role) => {
-    setError('');
-    try {
-      if (role === 'student') {
-        await devLogin('rahul.nair@gmail.com', 'Rahul Nair', 'student', 'CS2026');
-      } else if (role === 'admin') {
-        await devLogin('admin.volunteer@gmail.com', 'Ananya V (Volunteer Admin)', 'admin');
-      } else if (role === 'super_admin') {
-        await devLogin('superadmin@gmail.com', 'Dr. Radhakrishnan (Super Admin)', 'super_admin');
-      }
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Quick dev login is disabled in production. Please use Email OTP below to log in.');
-    }
-  };
-
-  const [showEmailInput, setShowEmailInput] = useState(false);
-
-  useEffect(() => {
-    checkDevMode();
-    loadGoogleGSI();
-  }, []);
-
   const loadGoogleGSI = () => {
     if (window.google?.accounts?.id) {
       initGoogleGSI();
@@ -94,8 +42,6 @@ export const Login = () => {
     script.onload = () => initGoogleGSI();
     document.body.appendChild(script);
   };
-
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
   const initGoogleGSI = () => {
     try {
@@ -114,19 +60,16 @@ export const Login = () => {
     }
   };
 
-  const handleGoogleCredential = async (credentialToken, manualEmail = '') => {
+  const handleGoogleCredential = async (credentialToken) => {
     setError('');
     setLoading(true);
     try {
       const res = await api.post('/auth/google', {
-        credential: credentialToken || null,
-        email: manualEmail ? manualEmail.trim().toLowerCase() : null,
-        name: '',
-        roll_no: ''
+        credential: credentialToken
       });
       loginWithToken(res.data.access_token, res.data.user);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Google sign-in failed. Please try again.');
+      setError(err.response?.data?.detail || 'Google authentication failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -138,49 +81,60 @@ export const Login = () => {
       try {
         window.google.accounts.id.prompt((notification) => {
           if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            setShowEmailInput(true);
+            setError('Google sign-in popup was blocked or closed. Please allow popups or try again.');
           }
         });
       } catch (e) {
-        setShowEmailInput(true);
+        setError('Could not open Google sign-in. Please ensure Google Client ID is configured.');
       }
     } else {
-      setShowEmailInput(true);
+      setError('Google Sign-In is initializing. Please tap again in a moment or refresh.');
     }
   };
 
-  const handleVerifyOTP = async (e) => {
+  const handleAdminOverrideSubmit = async (e) => {
     e.preventDefault();
     setError('');
-
-    if (!otp || otp.length < 4) {
-      setError('Please enter the verification code sent to your email');
+    if (!overrideCode.trim()) {
+      setError('Please enter the secret Admin Override Code');
       return;
     }
 
     setLoading(true);
     try {
-      const res = await api.post('/auth/verify-otp', {
-        phone: email.trim().toLowerCase(),
-        otp: otp.trim(),
-        name: name.trim(),
-        roll_no: rollNo.trim()
+      const res = await api.post('/auth/admin-override', {
+        override_code: overrideCode.trim()
       });
+      setShowOverrideModal(false);
       loginWithToken(res.data.access_token, res.data.user);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Invalid or expired verification code.');
+      setError(err.response?.data?.detail || 'Invalid or rate-limited Admin Override Code.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleQuickDevLogin = async (role) => {
+    setError('');
+    try {
+      if (role === 'student') {
+        await devLogin('rahul.nair@gmail.com', 'Rahul Nair', 'student', 'CS2026');
+      } else if (role === 'admin') {
+        await devLogin('admin.volunteer@gmail.com', 'Ananya V (Volunteer Admin)', 'admin');
+      } else if (role === 'super_admin') {
+        await devLogin('superadmin@gmail.com', 'Dr. Radhakrishnan (Super Admin)', 'super_admin');
+      }
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Dev login is disabled in production.');
     }
   };
 
   const inputClass =
     'w-full bg-onam-black border border-onam-line rounded-xl px-4 py-3 text-onam-kasavu text-sm ' +
     'placeholder-onam-muted-faint focus:outline-none focus:border-onam-gold-deep transition';
-  const labelClass = 'block text-[10.5px] font-bold uppercase tracking-[0.1em] text-onam-muted mb-1.5';
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-10 bg-onam-black">
+    <div className="min-h-screen flex items-center justify-center px-4 py-10 bg-onam-black relative">
       <div className="w-full max-w-md">
 
         <div className="relative overflow-hidden rounded-3xl bg-onam-deep border border-onam-line shadow-2xl">
@@ -209,103 +163,39 @@ export const Login = () => {
               </div>
             )}
 
-            {step === 'email' && (
-              <div className="space-y-4">
-                <p className="text-xs text-onam-muted text-center leading-relaxed px-2">
-                  Welcome! Sign in with your Google account to get your official Onam Sadhya entry pass.
-                </p>
+            <div className="space-y-4">
+              <p className="text-xs text-onam-muted text-center leading-relaxed px-2">
+                Welcome! Sign in with your Google account to access your official Onam Sadhya gate pass.
+              </p>
 
+              <button
+                type="button"
+                disabled={loading}
+                onClick={handleGoogleSignIn}
+                className="w-full py-4 px-5 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-sm shadow-xl transition flex items-center justify-center gap-3 active:scale-[0.98]"
+              >
+                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.28v3.13C3.25 21.3 7.31 24 12 24z"/>
+                  <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.6H1.28C.46 8.23 0 10.06 0 12s.46 3.77 1.28 5.4h4z"/>
+                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.7 1.28 6.6l4 3.13c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                </svg>
+                <span>{loading ? 'Connecting Google…' : 'Sign in with Google'}</span>
+              </button>
+
+              <div className="pt-3 text-center">
                 <button
                   type="button"
-                  disabled={loading}
-                  onClick={() => handleGoogleSignIn()}
-                  className="w-full py-4 px-5 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-sm shadow-xl transition flex items-center justify-center gap-3 active:scale-[0.98]"
+                  onClick={() => { setError(''); setShowOverrideModal(true); }}
+                  className="inline-flex items-center gap-1.5 text-[11px] text-onam-muted-dim hover:text-onam-gold transition"
                 >
-                  <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
-                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.28v3.13C3.25 21.3 7.31 24 12 24z"/>
-                    <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.6H1.28C.46 8.23 0 10.06 0 12s.46 3.77 1.28 5.4h4z"/>
-                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.7 1.28 6.6l4 3.13c.95-2.83 3.6-4.98 6.72-4.98z"/>
-                  </svg>
-                  <span>{loading ? 'Connecting Google…' : 'Sign in with Google'}</span>
+                  <KeyRound className="w-3.5 h-3.5" />
+                  <span>Organiser Security Override Key</span>
                 </button>
-
-                {showEmailInput && (
-                  <form onSubmit={(e) => { e.preventDefault(); handleGoogleCredential(null, email); }} className="pt-2 space-y-3">
-                    <label className={labelClass}>Google / Student Email</label>
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="student@gmail.com"
-                      className={inputClass}
-                    />
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="btn-gold w-full py-3 text-xs font-bold"
-                    >
-                      {loading ? 'Signing in…' : 'Continue with Google Account'}
-                    </button>
-                  </form>
-                )}
-
-                <div className="pt-2 text-center">
-                  <button
-                    type="button"
-                    onClick={() => setStep('otp')}
-                    className="text-[11px] text-onam-muted-dim hover:text-onam-gold transition"
-                  >
-                    Admin Backdoor / Verification Key
-                  </button>
-                </div>
               </div>
-            )}
+            </div>
 
-            {step === 'otp' && (
-              <form onSubmit={handleVerifyOTP}>
-                <div className="p-3.5 rounded-xl bg-onam-black border border-onam-line text-xs text-onam-muted text-center">
-                  Code sent to <span className="font-mono text-onam-gold">{email}</span>
-                  {devOtpHint && (
-                    <div className="mt-1.5 font-mono text-onam-muted-dim">
-                      Dev code: <strong className="text-onam-gold">{devOtpHint}</strong>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-4">
-                  <label className={labelClass}>Enter 6-digit code</label>
-                  <input
-                    type="text"
-                    required
-                    maxLength={6}
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    placeholder="123456"
-                    className={`${inputClass} font-mono text-center text-2xl tracking-[0.35em] text-onam-gold py-3.5`}
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="btn-gold w-full mt-5 py-[15px] px-4 text-sm"
-                >
-                  {loading ? 'Verifying…' : 'Verify & continue'}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setStep('email')}
-                  className="w-full text-xs text-onam-muted-dim hover:text-onam-kasavu transition text-center pt-4"
-                >
-                  Change email address
-                </button>
-              </form>
-            )}
-
-            {/* Dev shortcuts — secondary by design, only rendered when backend DEV_MODE is true */}
+            {/* Dev shortcuts — rendered only when DEV_MODE is true */}
             {devModeEnabled && (
               <div className="mt-8">
                 <p className="font-mono text-[9.5px] tracking-[0.16em] uppercase text-onam-muted-faint text-center mb-2.5">
@@ -336,6 +226,52 @@ export const Login = () => {
         </div>
 
       </div>
+
+      {/* Admin Security Override Modal */}
+      {showOverrideModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-onam-deep border border-onam-line rounded-2xl max-w-sm w-full p-6 relative shadow-2xl">
+            <button
+              onClick={() => setShowOverrideModal(false)}
+              className="absolute top-4 right-4 text-onam-muted hover:text-onam-kasavu transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2.5 mb-2">
+              <KeyRound className="w-5 h-5 text-onam-gold" />
+              <h3 className="font-serif text-lg font-semibold text-onam-kasavu">Admin Security Override</h3>
+            </div>
+            <p className="text-xs text-onam-muted leading-relaxed mb-4">
+              Enter the secret Organiser Security Key from backend environment configuration for emergency analytics access.
+            </p>
+
+            <form onSubmit={handleAdminOverrideSubmit} className="space-y-4">
+              <div>
+                <label className="block text-[10.5px] font-bold uppercase tracking-[0.1em] text-onam-muted mb-1.5">
+                  Override Code
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={overrideCode}
+                  onChange={(e) => setOverrideCode(e.target.value)}
+                  placeholder="Enter secret key…"
+                  className={inputClass}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-gold w-full py-3 text-xs font-bold"
+              >
+                {loading ? 'Verifying Key…' : 'Authenticate Override'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

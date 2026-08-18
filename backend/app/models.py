@@ -1,4 +1,5 @@
 import uuid
+from typing import Optional
 from datetime import datetime, timezone
 import enum
 from sqlalchemy import String, Boolean, DateTime, ForeignKey, Enum, Text
@@ -27,9 +28,11 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
-    phone: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    phone: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    roll_no: Mapped[str] = mapped_column(String(50), nullable=True)
+    roll_no: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    google_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     role: Mapped[UserRole] = mapped_column(
         Enum(UserRole, native_enum=False, values_callable=lambda x: [e.value for e in x]),
         default=UserRole.STUDENT,
@@ -52,14 +55,14 @@ class Ticket(Base):
         default=TicketStatus.PENDING,
         nullable=False
     )
-    payment_proof_url: Mapped[str] = mapped_column(String(255), nullable=True)
-    payment_note: Mapped[str] = mapped_column(String(255), nullable=True)
-    rejection_reason: Mapped[str] = mapped_column(String(255), nullable=True)
-    reviewed_by: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
-    qr_token: Mapped[str] = mapped_column(String(255), unique=True, nullable=True, index=True)
+    payment_proof_url: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    payment_note: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    rejection_reason: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    reviewed_by: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
+    qr_token: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True, index=True)
     used: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    scanned_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
-    scanned_by: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
+    scanned_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    scanned_by: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
     # Relationships
@@ -67,14 +70,13 @@ class Ticket(Base):
     reviewer: Mapped["User"] = relationship("User", foreign_keys=[reviewed_by])
     scanner: Mapped["User"] = relationship("User", foreign_keys=[scanned_by])
 
-class OTPRequest(Base):
-    __tablename__ = "otp_requests"
+class OverrideAttempt(Base):
+    __tablename__ = "override_attempts"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
-    phone: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
-    otp_code: Mapped[str] = mapped_column(String(10), nullable=False)
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    attempts: Mapped[int] = mapped_column(default=0, nullable=False)
+    ip_address: Mapped[str] = mapped_column(String(45), index=True, nullable=False)
+    success: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    target_email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
 

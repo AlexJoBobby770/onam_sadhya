@@ -10,7 +10,7 @@ from sqlalchemy.orm import selectinload
 from app.config import settings
 from app.database import get_db
 from app.models import User, Ticket, TicketStatus
-from app.schemas import UserResponse, TicketResponse
+from app.schemas import UserResponse, TicketResponse, ProfileUpdateRequest
 from app.utils.security import get_current_user
 from app.utils.qr import generate_qr_code_base64
 
@@ -29,7 +29,8 @@ def build_ticket_response(ticket: Ticket, with_qr: bool = False) -> TicketRespon
         id=ticket.id,
         user_id=ticket.user_id,
         user_name=ticket.user.name if ticket.user else "Unknown",
-        user_phone=ticket.user.phone if ticket.user else "",
+        user_email=ticket.user.email if ticket.user else None,
+        user_phone=ticket.user.phone if ticket.user else None,
         user_roll_no=ticket.user.roll_no if ticket.user else None,
         status=ticket.status,
         payment_proof_url=ticket.payment_proof_url,
@@ -47,6 +48,23 @@ def build_ticket_response(ticket: Ticket, with_qr: bool = False) -> TicketRespon
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)):
+    return UserResponse.model_validate(current_user)
+
+@router.post("/student/profile", response_model=UserResponse)
+async def update_profile(
+    payload: ProfileUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    if not payload.roll_no or not payload.roll_no.strip():
+        raise HTTPException(status_code=400, detail="Class or Roll Number is required.")
+
+    current_user.roll_no = payload.roll_no.strip()
+    if payload.name and payload.name.strip():
+        current_user.name = payload.name.strip()
+
+    await db.commit()
+    await db.refresh(current_user)
     return UserResponse.model_validate(current_user)
 
 @router.get("/tickets/me", response_model=Optional[TicketResponse])
@@ -76,6 +94,13 @@ async def submit_ticket(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
+    # Profile completeness check
+    if not current_user.roll_no or not current_user.roll_no.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Profile incomplete: Class/Roll number is required before submitting a ticket."
+        )
+
     # Check if user already has an active pending or approved ticket
     stmt = select(Ticket).where(
         Ticket.user_id == current_user.id,

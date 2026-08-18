@@ -1,12 +1,14 @@
+import os
 import pytest
 import pytest_asyncio
 import asyncio
+from unittest.mock import patch, MagicMock
 from datetime import timedelta
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 
 from app.main import app
-from app.config import settings
+from app.config import settings, Settings, validate_settings
 from app.database import Base, get_db
 from app.utils.qr import generate_qr_token, verify_and_extract_ticket_id
 from app.utils.security import create_access_token
@@ -39,6 +41,33 @@ async def prepare_database():
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
 
+def test_missing_secret_key_fails_loud():
+    """
+    Verifies that a missing or empty SECRET_KEY fails loud with KeyError.
+    """
+    s = Settings(SECRET_KEY="", SUPER_ADMIN_OVERRIDE_CODE="valid_override_code", GOOGLE_CLIENT_ID="valid_google_client_id")
+    with pytest.raises(KeyError) as exc:
+        validate_settings(s)
+    assert "SECRET_KEY" in str(exc.value)
+
+def test_missing_super_admin_override_code_fails_loud():
+    """
+    Verifies that a missing or empty SUPER_ADMIN_OVERRIDE_CODE fails loud with KeyError.
+    """
+    s = Settings(SECRET_KEY="valid_secret_key", SUPER_ADMIN_OVERRIDE_CODE="", GOOGLE_CLIENT_ID="valid_google_client_id")
+    with pytest.raises(KeyError) as exc:
+        validate_settings(s)
+    assert "SUPER_ADMIN_OVERRIDE_CODE" in str(exc.value)
+
+def test_missing_google_client_id_fails_loud():
+    """
+    Verifies that a missing or empty GOOGLE_CLIENT_ID fails loud with KeyError.
+    """
+    s = Settings(SECRET_KEY="valid_secret_key", SUPER_ADMIN_OVERRIDE_CODE="valid_override_code", GOOGLE_CLIENT_ID="")
+    with pytest.raises(KeyError) as exc:
+        validate_settings(s)
+    assert "GOOGLE_CLIENT_ID" in str(exc.value)
+
 def test_qr_hmac_signing():
     ticket_id = "test-ticket-uuid-12345"
     qr_token = generate_qr_token(ticket_id)
@@ -64,7 +93,7 @@ async def test_dev_login_gating():
         try:
             settings.DEV_MODE = False
             res = await client.post("/auth/dev-login", json={
-                "phone": "attacker@malayalamuniversity.org",
+                "email": "attacker@malayalamuniversity.org",
                 "name": "Attacker",
                 "role": "super_admin"
             })
@@ -88,25 +117,89 @@ async def test_jwt_expiry_rejection():
         assert res.status_code == 401
 
 @pytest.mark.asyncio
-async def test_email_otp_syntax_validation():
+async def test_google_login_creates_user():
     """
-    Verifies Email OTP registration accepts any syntactically valid email address and rejects malformed email strings.
+    Verifies a first-time Google login creates a User row correctly from verified Google ID token.
     """
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        # Malformed email attempt -> expect 400
-        res = await client.post("/auth/send-otp", json={"phone": "invalidemailstring"})
-        assert res.status_code == 400
-        assert "valid email address" in res.json()["detail"]
+        mock_claims = {
+            "email": "freshman.google@gmail.com",
+            "name": "Freshman Student",
+            "sub": "google-user-id-999"
+        }
+        with patch("app.routers.auth._verify_google_credential", return_value=mock_claims):
+            res = await client.post("/auth/google", json={"credential": "mock_google_id_token_xyz"})
+            assert res.status_code == 200
+            data = res.json()
+            assert "access_token" in data
+            assert data["user"]["email"] == "freshman.google@gmail.com"
+            assert data["user"]["name"] == "Freshman Student"
+            assert data["user"]["role"] == "student"
 
-        # Valid general email (e.g. personal Gmail for first-years) -> expect 200
-        res1 = await client.post("/auth/send-otp", json={"phone": "freshman1@gmail.com"})
-        assert res1.status_code == 200
+@pytest.mark.asyncio
+async def test_profile_completion_required():
+    """
+    Verifies a user without roll_no set is blocked from submitting a ticket until profile is completed.
+    """
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        mock_claims = {
+            "email": "incomplete.profile@gmail.com",
+            "name": "Incomplete Student",
+            "sub": "google-user-id-888"
+        }
+        with patch("app.routers.auth._verify_google_credential", return_value=mock_claims):
+            res = await client.post("/auth/google", json={"credential": "mock_token_123"})
+            token = res.json()["access_token"]
+            headers = {"Authorization": f"Bearer {token}"}
 
-        # Valid college email -> expect 200
-        res2 = await client.post("/auth/send-otp", json={"phone": "student2@malayalamuniversity.org"})
-        assert res2.status_code == 200
+        # Attempt to submit ticket without setting roll_no -> Expect 400
+        sub_res = await client.post("/tickets", data={"note": "Paid via UPI"}, headers=headers)
+        assert sub_res.status_code == 400
+        assert "Profile incomplete" in sub_res.json()["detail"]
 
+        # Complete profile via /student/profile
+        prof_res = await client.post("/student/profile", json={"roll_no": "CS-2026-A"}, headers=headers)
+        assert prof_res.status_code == 200
+        assert prof_res.json()["roll_no"] == "CS-2026-A"
+
+        # Retry submitting ticket -> Expect 200 success
+        sub_res_2 = await client.post("/tickets", data={"note": "Paid via UPI"}, headers=headers)
+        assert sub_res_2.status_code == 200
+
+@pytest.mark.asyncio
+async def test_override_code_rate_limited():
+    """
+    Verifies the admin override endpoint locks out after 5 repeated failed attempts in DB.
+    """
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        # Send 5 incorrect override attempts
+        for i in range(5):
+            res = await client.post("/auth/admin-override", json={"override_code": "wrong_code_guess"})
+            assert res.status_code == 401
+
+        # 6th attempt -> Expect 429 Too Many Requests lockout
+        lockout_res = await client.post("/auth/admin-override", json={"override_code": "wrong_code_guess"})
+        assert lockout_res.status_code == 429
+        assert "Lockout in effect" in lockout_res.json()["detail"]
+
+def test_override_code_not_in_source():
+    """
+    Asserts that no 6-digit backdoor literal "777777" appears anywhere in the app source code directory.
+    """
+    app_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "app")
+    found_literals = []
+    for root, _, files in os.walk(app_dir):
+        for file in files:
+            if file.endswith(".py"):
+                filepath = os.path.join(root, file)
+                with open(filepath, "r", encoding="utf-8") as f:
+                    content = f.read()
+                    if "777777" in content:
+                        found_literals.append(filepath)
+    assert len(found_literals) == 0, f"Found hardcoded backdoor 777777 in files: {found_literals}"
 
 @pytest.mark.asyncio
 async def test_with_qr_gating_and_admin_endpoints():
@@ -120,16 +213,16 @@ async def test_with_qr_gating_and_admin_endpoints():
             settings.DEV_MODE = True
             # Super Admin login
             admin_res = await client.post("/auth/dev-login", json={
-                "phone": "admin@malayalamuniversity.org",
+                "email": "admin@malayalamuniversity.org",
                 "name": "Organiser Admin",
                 "role": "super_admin"
             })
             admin_token = admin_res.json()["access_token"]
             admin_headers = {"Authorization": f"Bearer {admin_token}"}
 
-            # Student login
+            # Student login with roll_no
             student_res = await client.post("/auth/dev-login", json={
-                "phone": "rahul.nair@malayalamuniversity.org",
+                "email": "rahul.nair@malayalamuniversity.org",
                 "name": "Rahul Nair",
                 "roll_no": "CS2026",
                 "role": "student"
@@ -168,7 +261,7 @@ async def test_full_sadhya_workflow_and_concurrent_scan():
             settings.DEV_MODE = True
             # 1. Dev Login as Super Admin
             res = await client.post("/auth/dev-login", json={
-                "phone": "admin@malayalamuniversity.org",
+                "email": "admin@malayalamuniversity.org",
                 "name": "Super Admin",
                 "role": "super_admin"
             })
@@ -176,9 +269,9 @@ async def test_full_sadhya_workflow_and_concurrent_scan():
             admin_token = res.json()["access_token"]
             admin_headers = {"Authorization": f"Bearer {admin_token}"}
 
-            # 2. Dev Login as Student
+            # 2. Dev Login as Student with roll_no
             res = await client.post("/auth/dev-login", json={
-                "phone": "rahul.nair@malayalamuniversity.org",
+                "email": "rahul.nair@malayalamuniversity.org",
                 "name": "Rahul Nair",
                 "roll_no": "CS2026",
                 "role": "student"

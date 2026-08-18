@@ -36,8 +36,7 @@ async def init_db():
         if not is_sqlite:
             from sqlalchemy import text
             try:
-                await conn.execute(text("ALTER TABLE users ALTER COLUMN phone TYPE VARCHAR(255);"))
-                await conn.execute(text("ALTER TABLE otp_requests ALTER COLUMN phone TYPE VARCHAR(255);"))
+                await conn.execute(text("ALTER TABLE users ALTER COLUMN email TYPE VARCHAR(255);"))
             except Exception:
                 pass
 
@@ -50,15 +49,15 @@ async def init_db():
             result = await session.execute(stmt)
             super_admin = result.scalars().first()
             if not super_admin:
-                admin_email = os.getenv("ADMIN_EMAIL", "admin@onamsadhya.org")
+                admin_email = os.getenv("ADMIN_EMAIL", "admin@onamsadhya.org").strip().lower()
                 # Check if user with that email already exists
-                user_stmt = select(User).where(User.phone == admin_email)
+                user_stmt = select(User).where(User.email == admin_email)
                 existing = (await session.execute(user_stmt)).scalars().first()
                 if existing:
                     existing.role = UserRole.SUPER_ADMIN
                 else:
                     new_super = User(
-                        phone=admin_email,
+                        email=admin_email,
                         name="Onam Sadhya Organiser",
                         roll_no="SUPER-001",
                         role=UserRole.SUPER_ADMIN

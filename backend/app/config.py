@@ -1,27 +1,18 @@
 import os
+from typing import Optional
 from pydantic_settings import BaseSettings
-
 from pydantic import ConfigDict
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Onam Sadhya QR Ticketing"
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./onam_sadhya.db")
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "onam_sadhya_secret_key_festive_2026_safe_hash")
+    SECRET_KEY: str = ""
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_HOURS: int = 12  # Token expires after 12 hours
-    OTP_EXPIRY_MINUTES: int = 10
     DEV_MODE: bool = False
     SADHYA_TICKET_PRICE: float = 250.0  # Ticket price per student for analytics
-    
-    # College domain restriction
-    COLLEGE_EMAIL_DOMAIN: str = os.getenv("COLLEGE_EMAIL_DOMAIN", "malayalamuniversity.org")
-    
-    # SMTP Settings for Free Email OTP
-    SMTP_HOST: str = os.getenv("SMTP_HOST", "smtp.gmail.com")
-    SMTP_PORT: int = int(os.getenv("SMTP_PORT", "465"))
-    SMTP_USER: str = os.getenv("SMTP_USER", "")
-    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
-    SMTP_FROM: str = os.getenv("SMTP_FROM", "")
+    SUPER_ADMIN_OVERRIDE_CODE: str = ""
+    GOOGLE_CLIENT_ID: str = ""
 
     # Supabase Free Tier Storage Settings
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
@@ -39,7 +30,18 @@ class Settings(BaseSettings):
 
     model_config = ConfigDict(env_file=".env", extra="ignore")
 
+def validate_settings(s: Settings) -> None:
+    # Hard Fail-Loud Security Invariants: No fallback literals for JWT signing, Override secrets, or Google Client ID
+    if not s.SECRET_KEY or not s.SECRET_KEY.strip():
+        raise KeyError("CRITICAL SECURITY ERROR: SECRET_KEY environment variable is missing or empty. Server cannot start.")
+    if not s.SUPER_ADMIN_OVERRIDE_CODE or not s.SUPER_ADMIN_OVERRIDE_CODE.strip():
+        raise KeyError("CRITICAL SECURITY ERROR: SUPER_ADMIN_OVERRIDE_CODE environment variable is missing or empty. Server cannot start.")
+    if not s.GOOGLE_CLIENT_ID or not s.GOOGLE_CLIENT_ID.strip():
+        raise KeyError("CRITICAL SECURITY ERROR: GOOGLE_CLIENT_ID environment variable is missing or empty. Server cannot start.")
+
 settings = Settings()
+validate_settings(settings)
+
 if settings.FRONTEND_URL and settings.FRONTEND_URL not in settings.CORS_ORIGINS:
     settings.CORS_ORIGINS.append(settings.FRONTEND_URL)
 

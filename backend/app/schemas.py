@@ -4,30 +4,21 @@ from pydantic import BaseModel, Field, ConfigDict
 from app.models import UserRole, TicketStatus
 
 # Auth Schemas
-class SendOTPRequest(BaseModel):
-    phone: str = Field(..., description="College email address (or mobile phone number)")
+class GoogleLoginRequest(BaseModel):
+    credential: str = Field(..., description="Google ID token returned by Google GSI")
 
-class SendOTPResponse(BaseModel):
-    message: str
-    phone: str
-    dev_otp: Optional[str] = None  # Returned only in dev mode for easy testing
+class AdminOverrideRequest(BaseModel):
+    override_code: str = Field(..., description="Secret Super Admin override authorization code")
 
-class VerifyOTPRequest(BaseModel):
-    phone: str
-    otp: str
-    name: str = Field(..., description="Full Name of the student")
-    roll_no: str = Field(..., description="College Roll Number (Required)")
+class ProfileUpdateRequest(BaseModel):
+    roll_no: str = Field(..., description="Class or Roll Number (Required)")
+    name: Optional[str] = Field(None, description="Full Name of the student")
 
 class DevLoginRequest(BaseModel):
-    phone: str
+    email: Optional[str] = None
+    phone: Optional[str] = None
     name: str
     role: UserRole = UserRole.STUDENT
-    roll_no: Optional[str] = None
-
-class GoogleLoginRequest(BaseModel):
-    credential: Optional[str] = None
-    email: Optional[str] = None
-    name: Optional[str] = None
     roll_no: Optional[str] = None
 
 class TokenResponse(BaseModel):
@@ -38,7 +29,8 @@ class TokenResponse(BaseModel):
 # User Schemas
 class UserResponse(BaseModel):
     id: str
-    phone: str
+    email: str
+    phone: Optional[str] = None
     name: str
     roll_no: Optional[str] = None
     role: UserRole
@@ -58,7 +50,8 @@ class TicketResponse(BaseModel):
     id: str
     user_id: str
     user_name: str
-    user_phone: str
+    user_email: Optional[str] = None
+    user_phone: Optional[str] = None
     user_roll_no: Optional[str] = None
     status: TicketStatus
     payment_proof_url: Optional[str] = None
@@ -99,6 +92,7 @@ class ScanResponse(BaseModel):
     status: str  # "GRANTED", "ALREADY_USED", "INVALID_TOKEN", "TICKET_NOT_APPROVED"
     student_name: Optional[str] = None
     roll_no: Optional[str] = None
+    email: Optional[str] = None
     phone: Optional[str] = None
     scanned_at: Optional[datetime] = None
     previously_scanned_at: Optional[datetime] = None
