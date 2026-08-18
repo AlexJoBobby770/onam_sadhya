@@ -493,3 +493,29 @@ async def revoke_or_reset_ticket(
     await db.commit()
     await db.refresh(ticket)
     return build_ticket_response(ticket)
+
+@router.get("/users", response_model=List[UserResponse])
+async def list_users(
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_super_admin_only)
+):
+    stmt = select(User).order_by(User.created_at.desc())
+    users = (await db.execute(stmt)).scalars().all()
+    return [UserResponse.model_validate(u) for u in users]
+
+@router.post("/users/{user_id}/role", response_model=UserResponse)
+async def update_user_role(
+    user_id: str,
+    payload: UserRoleUpdate,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_super_admin_only)
+):
+    stmt = select(User).where(User.id == user_id)
+    user = (await db.execute(stmt)).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.role = payload.role
+    await db.commit()
+    await db.refresh(user)
+    return UserResponse.model_validate(user)

@@ -55,7 +55,7 @@ class Ticket(Base):
         default=TicketStatus.PENDING,
         nullable=False
     )
-    payment_proof_url: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    payment_proof_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     payment_note: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     rejection_reason: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     reviewed_by: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)

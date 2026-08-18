@@ -45,6 +45,7 @@ async def init_db():
                 await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(255);"))
                 await conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_email ON users (email);"))
                 await conn.execute(text("ALTER TABLE users ALTER COLUMN phone DROP NOT NULL;"))
+                await conn.execute(text("ALTER TABLE tickets ALTER COLUMN payment_proof_url TYPE TEXT;"))
             except Exception as e:
                 print(f"PostgreSQL DDL Migration note: {e}")
 
