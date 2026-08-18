@@ -3,6 +3,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from google.oauth2 import id_token as google_id_token
@@ -50,7 +51,9 @@ async def google_login(payload: GoogleLoginRequest, db: AsyncSession = Depends(g
             detail="Google ID token credential is required for login."
         )
 
-    token_data = _verify_google_credential(payload.credential.strip())
+    # verify_oauth2_token fetches Google's signing certs over HTTPS and is fully
+    # synchronous - called inline it stalls the event loop on every single login.
+    token_data = await run_in_threadpool(_verify_google_credential, payload.credential.strip())
     email = token_data.get("email", "").strip().lower()
     name = token_data.get("name") or "Student"
     google_id = token_data.get("sub")

@@ -35,9 +35,19 @@ async def get_db():
         finally:
             await session.close()
 
+ONE_ACTIVE_TICKET_INDEX = (
+    "CREATE UNIQUE INDEX IF NOT EXISTS ix_tickets_one_active_per_user "
+    "ON tickets (user_id) WHERE status IN ('pending', 'approved')"
+)
+
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        from sqlalchemy import text as _text
+        try:
+            await conn.execute(_text(ONE_ACTIVE_TICKET_INDEX))
+        except Exception as e:
+            print(f"One-active-ticket index note: {e}")
         if not is_sqlite:
             from sqlalchemy import text
             try:

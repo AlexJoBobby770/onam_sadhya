@@ -15,6 +15,15 @@ export const ScannerPage = () => {
   const [approvedList, setApprovedList] = useState([]);
   const [manualSearch, setManualSearch] = useState('');
   const [queuedScansCount, setQueuedScansCount] = useState(0);
+  const lastCacheRefresh = useRef(0);
+
+  // The cached list is only ever read while genuinely offline, so refreshing it
+  // after every scan just multiplies load at the gate. Two minutes is plenty.
+  const refreshCacheIfStale = () => {
+    if (Date.now() - lastCacheRefresh.current < 120000) return;
+    lastCacheRefresh.current = Date.now();
+    fetchApprovedTicketsCache();
+  };
 
   useEffect(() => {
     fetchApprovedTicketsCache();
@@ -115,12 +124,19 @@ export const ScannerPage = () => {
     try {
       const res = await api.post('/admin/scan', { qr_token: qrToken });
       setScanResult(res.data);
-      fetchApprovedTicketsCache();
+      refreshCacheIfStale();
     } catch (err) {
-      if (!err.response) {
-        // Request never reached the server (offline, or connected to a network
-        // with no real internet) - fall back to the local cache instead of erroring out.
+      if (!err.response && !navigator.onLine) {
+        // Genuinely no network - the local cache is the only thing left to check.
         handleOfflineScanValidation(qrToken);
+      } else if (!err.response) {
+        // Still on the network, so this is the server failing (restart, cold start,
+        // CORS-blocked 502). Fail closed: the cache cannot see other scanners' scans.
+        setScanResult({
+          success: false,
+          message: 'SERVER UNREACHABLE — do not admit yet. Wait a moment and scan again.',
+          status: 'INVALID_TOKEN'
+        });
       } else {
         setScanResult({
           success: false,
@@ -184,10 +200,16 @@ export const ScannerPage = () => {
     try {
       const res = await api.post('/admin/scan-manual', { ticket_id: ticketId });
       setScanResult(res.data);
-      fetchApprovedTicketsCache();
+      refreshCacheIfStale();
     } catch (err) {
-      if (!err.response) {
+      if (!err.response && !navigator.onLine) {
         handleOfflineScanValidation(ticketId, 'ticket_id', 'manual');
+      } else if (!err.response) {
+        setScanResult({
+          success: false,
+          message: 'SERVER UNREACHABLE — do not admit yet. Wait a moment and try again.',
+          status: 'INVALID_TOKEN'
+        });
       } else {
         setScanResult({
           success: false,
@@ -248,6 +270,22 @@ export const ScannerPage = () => {
           </button>
         </div>
       </div>
+
+      {/* Offline mode is a degraded state - each phone only sees its own scans,
+          so it needs to be impossible to miss, not a chip in the corner. */}
+      {!isOnline && (
+        <div className="p-4 rounded-2xl bg-rose-600 border border-rose-400 text-white flex items-start gap-3">
+          <WifiOff className="w-5 h-5 shrink-0 mt-0.5" />
+          <div className="text-xs leading-relaxed">
+            <p className="font-bold text-sm">OFFLINE MODE — reduced checking</p>
+            <p className="mt-1 text-rose-50">
+              This phone can only see scans made on this phone. A pass already used at
+              another gate will still show as valid. Verify against the other scanners
+              before admitting, and sync as soon as signal returns.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Queued Sync Banner if any pending offline scans */}
       {queuedScansCount > 0 && (

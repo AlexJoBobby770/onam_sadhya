@@ -5,6 +5,7 @@ from typing import Optional
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -177,7 +178,15 @@ async def submit_ticket(
         payment_note=note
     )
     db.add(ticket)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        # Lost the race against a concurrent submit (double-tap on a slow connection).
+        await db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail="You already have a pending ticket request under review"
+        )
 
     # Query back with relationships
     stmt = (
