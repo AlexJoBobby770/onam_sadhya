@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/client';
-import { Pookalam } from '../components/Pookalam';
+import { Pookalam, Thoran } from '../components/Pookalam';
 import { KeyRound, AlertCircle, X } from 'lucide-react';
 
 export const Login = () => {
