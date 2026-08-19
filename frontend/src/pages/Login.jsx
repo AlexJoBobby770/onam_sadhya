@@ -104,23 +104,6 @@ export const Login = () => {
     }
   };
 
-  const handleGoogleSignIn = () => {
-    setError('');
-    if (!googleClientId) {
-      setError('Google Sign-In is not configured yet (missing Client ID).');
-      return;
-    }
-    if (window.google?.accounts?.id) {
-      window.google.accounts.id.prompt((notification) => {
-        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          console.warn('GSI prompt not displayed:', notification.getNotDisplayedReason());
-        }
-      });
-    } else {
-      setError('Google Services initializing. Please try again in a moment.');
-    }
-  };
-
   const handleAdminOverrideSubmit = async (e) => {
     e.preventDefault();
     if (!overrideCode.strip && !overrideCode.trim()) return;
@@ -240,23 +223,23 @@ export const Login = () => {
                 <div className="w-full h-[44px] rounded-full bg-onam-cream-line/60 animate-pulse" />
               )}
 
+              {/* A themed button here would still depend on window.google existing,
+                  so it cannot recover a genuinely blocked/failed GSI load - it would
+                  just be a button that lies. An honest message plus a retry is more
+                  useful than a second button pretending to be an alternate path. */}
               {!gsiReady && gsiTimedOut && (
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={handleGoogleSignIn}
-                  className="btn-leaf flex w-full items-center justify-center gap-3 py-3.5 pl-3 pr-5 text-[15px]"
-                >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm">
-                    <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24">
-                      <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
-                      <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.28v3.13C3.25 21.3 7.31 24 12 24z"/>
-                      <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.6H1.28C.46 8.23 0 10.06 0 12s.46 3.77 1.28 5.4h4z"/>
-                      <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.7 1.28 6.6l4 3.13c.95-2.83 3.6-4.98 6.72-4.98z"/>
-                    </svg>
-                  </span>
-                  <span>{loading ? 'Signing you in…' : 'Sign in with Google'}</span>
-                </button>
+                <div className="text-center space-y-2">
+                  <p className="text-xs text-onam-red">
+                    Couldn't load Google Sign-In. Check your connection or try a different browser.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => window.location.reload()}
+                    className="text-xs font-semibold text-onam-gold-deep underline underline-offset-2"
+                  >
+                    Retry
+                  </button>
+                </div>
               )}
             </div>
 
